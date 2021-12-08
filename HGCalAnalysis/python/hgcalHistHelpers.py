@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import pylab
 import plotly.graph_objects as go
 import matplotlib.ticker as ticker
+import math
 
 def histValue1D(fValues, histDict, tag="hist1D_", title="hist 1D", axunit="a.u.", binsBoundariesX=[10, -1, 1], ayunit="a.u.", verbosityLevel=0):
     """1D histograming of given list of values."""
@@ -63,7 +64,7 @@ def histValues2D(fValues, histDict, tag="hist2D_", title="hist 2D", axunit="a.u.
     return histDict
 
 
-def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", latexComment="", funcsAndProps=None, verbosityLevel=0):
+def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", xaxistitle = "", yaxistitle = "", setLogY = False, latexComment="", funcsAndProps=None, verbosityLevel=0):
     """print/save list of histograms with their properties on one canvas"""
     # supress info messages
     ROOT.gErrorIgnoreLevel = ROOT.kInfo + 1
@@ -89,7 +90,8 @@ def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", latexComment
     ltx.SetTextFont(42)
     ltx.SetTextSize(0.03)
     # set image extensions
-    imgTypes = ["pdf", "png", "root"]
+    #imgTypes = ["pdf", "png", "root"]
+    imgTypes = ["png"]
     if (verbosityLevel >= 3):
         print("histsAndProps: ", histsAndProps)
         print("funcsAndProps: ", funcsAndProps)
@@ -105,7 +107,7 @@ def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", latexComment
             #     hist.Rebin()
         x_maxs.append(hist.GetBinCenter(hist.FindLastBinAbove(1)))
         hist.Scale(1./hist.Integral())
-        hist.GetYaxis().SetTitle("a.u.")
+        hist.GetYaxis().SetTitle(yaxistitle)
         curr_max = hist.GetMaximum()
         if (curr_max < 1./3.): # temp. fix for hists with very different y_max
             y_maxs.append(curr_max)
@@ -124,11 +126,15 @@ def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", latexComment
             hist.SetLineWidth(2)
             leg.AddEntry(hist, histsAndProps[hist]["leg"], "L")
             hist.GetXaxis().SetTitleOffset(hist.GetXaxis().GetTitleOffset() * 1.2)
-            hist.GetXaxis().SetTitle("E_{meas}/E_{true}")
+            hist.GetXaxis().SetTitle(xaxistitle)
             hist.GetYaxis().SetTitleOffset(hist.GetYaxis().GetTitleOffset() * 3.0)
             if (first):
-                hist.GetYaxis().SetRangeUser(0, max(y_maxs) * 1.4)
-                hist.GetXaxis().SetRangeUser(0, max(x_maxs) * 1.0)
+                if not setLogY:
+                    hist.GetYaxis().SetRangeUser(0, max(y_maxs) * 1.4)
+                    hist.GetXaxis().SetRangeUser(0, max(x_maxs) * 1.0)
+                #else: 
+                #    hist.GetYaxis().SetRangeUser(1, math.log10(max(y_maxs) * 1.4))
+                #    hist.GetXaxis().SetRangeUser(1, math.log10(max(x_maxs) * 1.0))
                 hist.Draw("hist0 goff")
                 first = False
             else:
@@ -148,6 +154,7 @@ def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", latexComment
     # print latex header
     ltx.SetTextColor(ROOT.kBlack)
     ltx.DrawLatex(0.150, 0.935, "CMS Phase-2 Simulation, #sqrt{s} = 14 TeV")
+    if setLogY: canvas.SetLogy()
     for imgType in imgTypes:
         canvas.SaveAs("{}/{}.{}".format(outDir, tag, imgType))
     return canvas
@@ -158,6 +165,7 @@ def histPrintSaveAll(histDict, outDir, tree):
     imgType = "png"
     outfile = ROOT.TFile("{}/{}".format(outDir, options.output), "recreate")
     canvas = ROOT.TCanvas(outDir, outDir, 500, 500)
+    canvas.SetLogy()
     if (options.verbosityLevel>=3): print( "histDict.items(): ", histDict.items())
     #Write tree
     tree.SetDirectory(outfile)
@@ -168,7 +176,7 @@ def histPrintSaveAll(histDict, outDir, tree):
             if item.GetEntries() == 0:
                 continue
         ROOT.gStyle.SetPalette(ROOT.kBird)
-        ROOT.gStyle.SetOptStat(0)
+        ROOT.gStyle.SetOptStat(1101)
         ROOT.gStyle.SetPadTopMargin(0.05)
         ROOT.gStyle.SetPadBottomMargin(0.12)
         ROOT.gStyle.SetPadLeftMargin(0.15)
@@ -316,6 +324,7 @@ def histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel = 0):
     imgType = "png"
     outfile = ROOT.TFile("{}/{}".format(outDir, output), "recreate")
     canvas = ROOT.TCanvas(outDir, outDir, 500, 500)
+    canvas.SetLogy()
     if (verbosityLevel>=3): print( "histDict.items(): ", histDict.items())
     #Write tree
     tree.SetDirectory(outfile)
@@ -326,7 +335,8 @@ def histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel = 0):
             if item.GetEntries() == 0:
                 continue
         ROOT.gStyle.SetPalette(ROOT.kBird)
-        ROOT.gStyle.SetOptStat(0)
+        #ROOT.gStyle.SetOptStat(0)
+        ROOT.gStyle.SetOptStat(1101)
         ROOT.gStyle.SetPadTopMargin(0.05)
         ROOT.gStyle.SetPadBottomMargin(0.12)
         ROOT.gStyle.SetPadLeftMargin(0.15)
@@ -471,6 +481,97 @@ def isMatched(eta,phi, genParticles,minDR = 0.5):
             belong=1
             break
     return belong
+#---------------------------------------------------------------------------------------------------
+def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,verbosityLevel = 0):
+
+    histDict = {}
+
+    #Sum of LCs energy over generated energy
+    ddfl = dfl[ (dfl['nhitAll'] >= 1)]
+    sumLCene = ddfl.groupby(['EventId']).agg( LCEneSum  = ('energy','sum'))
+    #print(sumLCene.head())
+    #print(sumLCene[['LCEneSum']].to_numpy())
+    theEgen = np.full(len(sumLCene[['LCEneSum']].to_numpy().flatten()),100.) #Hardcoded yes
+    sumLCeneOverEgen = sumLCene[['LCEneSum']].to_numpy().flatten() / theEgen
+    #print(sumLCeneOverEgen)
+
+    histDict_sumLCene = {}
+    histDict_sumLCene = histValue1D(sumLCeneOverEgen, histDict_sumLCene, tag = "sumLCeneOverEgen", title = "Cumulative LCs energy over generated energy",   axunit = "Sum of LCs Energy (GeV)", binsBoundariesX = [100, 0, 1], ayunit = "#Events/0.01 GeV", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_sumLCene, outDir, output, tree, verbosityLevel)
+
+    #Sum of the cells energy belonging to LCs of specific sizes. Essentially, a double check of the LC.energy() method. 
+    cellsFromLCEneSumPerSize = df.groupby(['EventId','nhitAll']).agg( cellsFromLCEneSum  = ('rechit_energy','sum'))
+    print(cellsFromLCEneSumPerSize)
+    cellEnSum_LC_Size1 = cellsFromLCEneSumPerSize.query("nhitAll == 1")[['cellsFromLCEneSum']].to_numpy().flatten()
+    cellEnSum_LC_Size2 = cellsFromLCEneSumPerSize.query("nhitAll == 2")[['cellsFromLCEneSum']].to_numpy().flatten()
+    cellEnSum_LC_Size3 = cellsFromLCEneSumPerSize.query("nhitAll == 3")[['cellsFromLCEneSum']].to_numpy().flatten()
+    cellEnSum_LC_Size4 = cellsFromLCEneSumPerSize.query("nhitAll == 4")[['cellsFromLCEneSum']].to_numpy().flatten()
+    #A little differently for the >=5 case
+    ddf = df[ (df['nhitAll'] >= 5)]
+    cellsFromLCEneSumPerSize = ddf.groupby(['EventId']).agg( cellsFromLCEneSum  = ('rechit_energy','sum'))
+    cellEnSum_LC_Sizege5 = cellsFromLCEneSumPerSize[['cellsFromLCEneSum']].to_numpy().flatten()
+    print(cellEnSum_LC_Size1, cellEnSum_LC_Size2, cellEnSum_LC_Size3, cellEnSum_LC_Size4, cellEnSum_LC_Sizege5)
+    #histDict[i] = histValue1D(cellEnSum_LC_Size1, histDict, tag = "CellsEnergySumForLCSize1", title = "Cells Energy from LCs of size 1",   axunit = "Cells Energy (GeV)", binsBoundariesX = [100, 0, 100], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
+
+    for i, obj in enumerate([cellEnSum_LC_Size1,cellEnSum_LC_Size2,cellEnSum_LC_Size3,cellEnSum_LC_Size4,cellEnSum_LC_Sizege5]):
+        histDict[i] = {}
+        thetitle = "Cells Energy Sum from LCs of size %s" %(i+1)
+        if i == 4: thetitle = "Cells Energy Sum from LCs of size >= %s" %(i+1)
+        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergySumForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Sum (GeV)", binsBoundariesX = [100, 0, 100], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
+        histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
+
+    #Max energy belonging to LCs of specific sizes.
+    cellsFromLCEneMaxPerSize = df.groupby(['EventId','nhitAll']).agg( cellsFromLCEneMax  = ('rechit_energy','max'))
+    print(cellsFromLCEneMaxPerSize)
+    cellEnMax_LC_Size1 = cellsFromLCEneMaxPerSize.query("nhitAll == 1")[['cellsFromLCEneMax']].to_numpy().flatten()
+    cellEnMax_LC_Size2 = cellsFromLCEneMaxPerSize.query("nhitAll == 2")[['cellsFromLCEneMax']].to_numpy().flatten()
+    cellEnMax_LC_Size3 = cellsFromLCEneMaxPerSize.query("nhitAll == 3")[['cellsFromLCEneMax']].to_numpy().flatten()
+    cellEnMax_LC_Size4 = cellsFromLCEneMaxPerSize.query("nhitAll == 4")[['cellsFromLCEneMax']].to_numpy().flatten()
+    #A little differently for the >=5 case
+    ddf = df[ (df['nhitAll'] >= 5)]
+    cellsFromLCEneMaxPerSize = ddf.groupby(['EventId']).agg( cellsFromLCEneMax  = ('rechit_energy','max'))
+    cellEnMax_LC_Sizege5 = cellsFromLCEneMaxPerSize[['cellsFromLCEneMax']].to_numpy().flatten()
+    print(cellEnMax_LC_Size1, cellEnMax_LC_Size2, cellEnMax_LC_Size3, cellEnMax_LC_Size4, cellEnMax_LC_Sizege5)
+
+    for i, obj in enumerate([cellEnMax_LC_Size1,cellEnMax_LC_Size2,cellEnMax_LC_Size3,cellEnMax_LC_Size4,cellEnMax_LC_Sizege5]):
+        histDict[i] = {}
+        thetitle = "Cells Energy Max from LCs of size %s" %(i+1)
+        if i == 4: thetitle = "Cells Energy Max from LCs of size >= %s" %(i+1)
+        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergyMaxForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Max (GeV)", binsBoundariesX = [100, 0, 100], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
+        histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
+
+    #histsAndProps = {histDict[0]['CellsEnergyMaxForLCSize1']:{"leg":"LC size == 1","color":ROOT.kRed}, histDict[1]['CellsEnergyMaxForLCSize2']:{"leg":"LC size == 2","color":ROOT.kBlue}, histDict[2]['CellsEnergyMaxForLCSize3']:{"leg":"LC size == 3","color":ROOT.kGreen}, histDict[3]['CellsEnergyMaxForLCSize4']:{"leg":"LC size == 4","color":ROOT.kOrange}, histDict[4]['CellsEnergyMaxForLCSize5']:{"leg":"LC size >= 5","color":ROOT.kBlack} }
+    
+    # plot these histograms on top of each other 
+    #histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyMaxNormForLCVariousSizes", xaxistitle = "Cells Energy (GeV)", yaxistitle = "a.u./0.01 GeV ", latexComment = "", funcsAndProps = None)
+
+    #Cells energy belonging to LCs of specific sizes.
+    cellsFromLCEnePerSize1 = df[ (df['nhitAll'] == 1)][['rechit_energy']].to_numpy().flatten()
+    cellsFromLCEnePerSize2 = df[ (df['nhitAll'] == 2)][['rechit_energy']].to_numpy().flatten()
+    cellsFromLCEnePerSize3 = df[ (df['nhitAll'] == 3)][['rechit_energy']].to_numpy().flatten()
+    cellsFromLCEnePerSize4 = df[ (df['nhitAll'] == 4)][['rechit_energy']].to_numpy().flatten()
+    cellsFromLCEnePerSizege5 = df[ (df['nhitAll'] >= 5)][['rechit_energy']].to_numpy().flatten()
+    print(cellsFromLCEnePerSize1,cellsFromLCEnePerSize2,cellsFromLCEnePerSize3,cellsFromLCEnePerSize4,cellsFromLCEnePerSizege5)
+
+    for i, obj in enumerate([cellsFromLCEnePerSize1,cellsFromLCEnePerSize2,cellsFromLCEnePerSize3,cellsFromLCEnePerSize4,cellsFromLCEnePerSizege5]):
+        histDict[i] = {}
+        thetitle = "Cells Energy from LCs of size %s" %(i+1)
+        if i == 4: thetitle = "Cells Energy from LCs of size >= %s" %(i+1)
+        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergyForLCSize%s"%(i+1), title = thetitle,   axunit = "Cells Energy (GeV)", binsBoundariesX = [100, 0, 1], ayunit = "#Events/0.01 GeV ", verbosityLevel=verbosityLevel)
+        print(histDict[i])
+        histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
+
+    #histsAndProps = { htemp1 : {"leg":"LC size == 1","color":ROOT.kRed}, htemp2 : {"leg":"LC size == 2","color":ROOT.kBlue}, htemp3 : {"leg":"LC size == 3","color":ROOT.kGreen}, htemp4 : {"leg":"LC size == 4","color":ROOT.kOrange}, htemp5 : {"leg":"LC size >= 5","color":ROOT.kBlack} }
+
+    
+    histsAndProps = {histDict[0]['CellsEnergyForLCSize1']:{"leg":"LC size == 1","color":ROOT.kRed}, histDict[1]['CellsEnergyForLCSize2']:{"leg":"LC size == 2","color":ROOT.kBlue}, histDict[2]['CellsEnergyForLCSize3']:{"leg":"LC size == 3","color":ROOT.kGreen}, histDict[3]['CellsEnergyForLCSize4']:{"leg":"LC size == 4","color":ROOT.kOrange}, histDict[4]['CellsEnergyForLCSize5']:{"leg":"LC size >= 5","color":ROOT.kBlack} }
+    
+    # plot these histograms on top of each other 
+    histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyNormForLCVariousSizes", xaxistitle = "Cells Energy (GeV)", yaxistitle = "a.u./0.01 GeV ", setLogY = True, latexComment = "", funcsAndProps = None)
+
+    #histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel)
+
+
 #---------------------------------------------------------------------------------------------------
 def drawEdges3d_plt(df,EventId):
     

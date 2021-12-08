@@ -114,7 +114,112 @@ def findSimHitsInOtherSide(df_simCl):
     #print(len(df),len(ddf),float(len(ddf))/float(len(df)))
 
     return ddf
+
+#---------------------------------------------------------------------------------------------------
+# Analyze LayerClusters tree
+def analyzeLayerClusters(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
     
+    #PerHit
+    out = collections.defaultdict(list)
+    #PerLayer
+    outLC = collections.defaultdict(list)
+
+    #---------------------------------------------------------------------------------------------------
+    # start event loop
+    for event in ntuple:
+        currentevent = event.entry()
+        if event.entry() >= maxEvents and maxEvents != -1 : break
+        if (verbosityLevel>=1 and currentevent % 1 == 0): print( "\nCurrent event: ", currentevent)
+
+        layerClusters = event.layerClusters()
+        
+        for layClusIndex, layClus in enumerate(layerClusters):
+            outLC["EventId"].append(currentevent)
+            outLC["EventIdFromFile"].append(event.event())
+            outLC["id"].append(layClus.id())
+            outLC["trackster_id"].append(layClus.trackster_id())
+            outLC["eta"].append(layClus.eta())
+            outLC["phi"].append(layClus.phi())
+            outLC["pt"].append(layClus.pt())
+            outLC["energy"].append(layClus.energy())
+            outLC["x"].append(layClus.x())
+            outLC["y"].append(layClus.y())
+            outLC["z"].append(layClus.z())
+            outLC["layer"].append(layClus.layer())
+            outLC["nhitCore"].append(layClus.nhitCore())
+            outLC["nhitAll"].append(layClus.nhitAll())
+            outLC["rechitSeed"].append(layClus.rechitSeed())
+            for DetId in layClus.rechit_detid():
+                out["lClusHits"].append(DetId)
+                out["EventId"].append(currentevent)
+                out["EventIdFromFile"].append(event.event())
+                out["id"].append(layClus.id())
+                out["trackster_id"].append(layClus.trackster_id())
+                out["eta"].append(layClus.eta())
+                out["phi"].append(layClus.phi())
+                out["pt"].append(layClus.pt())
+                out["energy"].append(layClus.energy())
+                out["x"].append(layClus.x())
+                out["y"].append(layClus.y())
+                out["z"].append(layClus.z())
+                out["layer"].append(layClus.layer())
+                out["nhitCore"].append(layClus.nhitCore())
+                out["nhitAll"].append(layClus.nhitAll())
+                out["rechitSeed"].append(layClus.rechitSeed())
+            for rh in layClus.rechit_eta():
+                out["rechit_eta"].append(rh)
+            for rh in layClus.rechit_phi():
+                out["rechit_phi"].append(rh)
+            for rh in layClus.rechit_pt():
+                out["rechit_pt"].append(rh)
+            for rh in layClus.rechit_energy():
+                out["rechit_energy"].append(rh)
+            for rh in layClus.rechit_x():
+                out["rechit_x"].append(rh)
+            for rh in layClus.rechit_y():
+                out["rechit_y"].append(rh)
+            for rh in layClus.rechit_z():
+                out["rechit_z"].append(rh)
+            for rh in layClus.rechit_time():
+                out["rechit_time"].append(rh)
+            for rh in layClus.rechit_thickness():
+                out["rechit_thickness"].append(rh)
+            for rh in layClus.rechit_layer():
+                out["rechit_layer"].append(rh)
+            for rh in layClus.rechit_wafer_u():
+                out["rechit_wafer_u"].append(rh)
+            for rh in layClus.rechit_wafer_v():
+                out["rechit_wafer_v"].append(rh)
+            for rh in layClus.rechit_cell_u():
+                out["rechit_cell_u"].append(rh)
+            for rh in layClus.rechit_cell_v():
+                out["rechit_cell_v"].append(rh)
+            for rh in layClus.rechit_isHalf():
+                out["rechit_isHalf"].append(rh)
+            for rh in layClus.rechit_flags():
+                out["rechit_flags"].append(rh)
+            for rh in layClus.rechit_flags():
+                out["rechit_flags"].append(rh)
+            for rh in layClus.rechit_layerclusterid():
+                out["rechit_layerclusterid"].append(rh)
+                   
+    #---------------------------------------------------------------------------------------------------
+    #for key, value in out.items(): print(key, len(value))
+    #Finished loop over events. Create the per hit dataframe
+    df = pd.DataFrame(dict([ (k,pd.Series(v)) for k,v in out.items() ]))
+    df.fillna(-99999,inplace=True)
+    #print(df.head())
+
+    #And now the per layer dataframe
+    dfl = pd.DataFrame(dict([ (k,pd.Series(v)) for k,v in outLC.items() ]))
+    dfl.fillna(-99999,inplace=True)
+    #print(dfl.head())
+
+    #Make all the plots needed using the above dataframes
+    layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,verbosityLevel)
+
+    return df
+
 #def recHitCalibration(csv_list): 
 def recHitCalibration(df): 
   
@@ -182,7 +287,7 @@ def recHitCalibration(df):
 
 #---------------------------------------------------------------------------------------------------
 # Analyze LayerClusters from Tracksters 
-def analyzeLayerClusters(layerClusters,currentevent,currenteventFromFile):
+def analyzeLayerClustersFromTracksters(layerClusters,currentevent,currenteventFromFile):
 
     #Out variables
     outLC = collections.defaultdict(list)
@@ -231,7 +336,7 @@ def analyzeTracksters(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
         tracksters = event.tracksters()
 
         #Create a dataframe with the LayerClusters of the Tracksters
-        dflcur = analyzeLayerClusters(layerClusters, currentevent, currenteventFromFile)
+        dflcur = analyzeLayerClustersFromTracksters(layerClusters, currentevent, currenteventFromFile)
         if currentevent == 0: dfl = dflcur
         else: dfl.append(dflcur)
         #dfl.to_csv('TrackstersAndLCs.csv', index=False)

@@ -32,11 +32,11 @@ HGCalAnalysis = cms.EDAnalyzer(
     #CaloParticle tree
     doCaloParticleTree = cms.untracked.bool(False),
     #SimCluster tree
-    doSimClustersTree = cms.untracked.bool(True),
+    doSimClustersTree = cms.untracked.bool(False),
     label_SimClusters = cms.InputTag("SimClusters"),
     label_SimClustersLevel = cms.InputTag("ClusterLevel"),
     #Layer Cluster tree
-    doLayerClustersTree = cms.untracked.bool(False),
+    doLayerClustersTree = cms.untracked.bool(True),
     label_layerClusterPlots = cms.InputTag("hgcalLayerClusters"),
     label_LCToCPLinking = cms.InputTag("LCToCP_association"),
     #Trackster and SimTrakcsters trees

@@ -543,7 +543,7 @@ namespace hgcal_validation
 
 	} else{
 	  //This simhit wasn't reconstructed. Save the info with as simclusterid -1, so that we know. 
-	  std::cout << "2 " << sh_detid.rawId() << std::endl;
+	  //std::cout << "2 " << sh_detid.rawId() << std::endl;
 	  matched_hits.push_back(9999);
 	  rhInfo.rechit_eta.push_back(-9999.);
 	  rhInfo.rechit_phi.push_back(-9999.);

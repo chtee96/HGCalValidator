@@ -216,6 +216,7 @@ void HGCalAnalysis::beginJob() {
     hgcal_validation::createRecHitRawBranches(fTree["RecHitsRawFromHitMap"], fRecHitRawInfo);
     hgcal_validation::createSimClustersBranches(fTree["SimClusters"], fSimClustersInfo, fRecHitInfo);
     hgcal_validation::createCaloParticlesBranches(fTree["CaloParticles"], fCaloParticlesInfo, fSimClustersInfo);
+    hgcal_validation::createLayerClustersBranches(fTree["LayerClusters"], fLayerClustersInfo);
     //Here the trees should be in agreement with the created in the tree_ config or a
     //segmentation fault will be produced
     for (const auto& itag : label_tst) {

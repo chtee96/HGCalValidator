@@ -66,6 +66,9 @@ def main():
         recHitCalibration(ddf)
         #recHitsCalib = recHitCalibration(df[ df["sClusMatchedHits"] != 9999])
        
+    if (options.object == "LayerClusters"):
+        df = analyzeLayerClusters(ntuple,tree,options.maxEvents,outDir,options.output,options.verbosityLevel)
+
     if (options.object in ["ticlTrackstersEM","ticlTrackstersTrkEM","ticlTrackstersTrk","ticlTrackstersHAD","ticlTrackstersMerge","ticlSimTracksters"] ):
         df = analyzeTracksters(ntuple,tree,options.maxEvents,outDir,options.output,options.verbosityLevel)
         #print(df.head())

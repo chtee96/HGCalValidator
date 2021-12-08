@@ -1,4 +1,8 @@
 <lcgdict>
+  <class name="Valid" />
+  <class name="std::vector<Valid>" />
+  <class name="edm::Wrapper<std::vector<Valid> >" />
+
   <class name="std::vector<std::set<unsigned int>>" />
   <class name="edm::Wrapper<std::vector<std::set<unsigned int>> >" />
 
