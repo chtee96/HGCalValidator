@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
-import NTUP_fragment as ntup_frag
-from NTUP_fragment import process
+import HGCalValidator.HGCalProduction.NTUP_fragment as ntup_frag
+from HGCalValidator.HGCalProduction.NTUP_fragment import process
 
 process.maxEvents.input = cms.untracked.int32(DUMMYEVTSPERJOB)
 

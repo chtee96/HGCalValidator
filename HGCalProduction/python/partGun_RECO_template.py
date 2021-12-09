@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-from RECO_fragment import process
+from HGCalValidator.HGCalProduction.RECO_fragment import process
 
 process.maxEvents.input = cms.untracked.int32(DUMMYEVTSPERJOB)
 
