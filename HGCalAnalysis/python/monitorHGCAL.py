@@ -26,6 +26,7 @@ parser.add_option("--object",help="The object we want to monitor")
 parser.add_option("--maxEvents",help="The maximum number of events you want to process. -1 for all events. ", type=int)
 parser.add_option("--verbosityLevel",help=" 0 - only basic info (default); 1 - additional info; 2 - detailed info printed, histograms produced",type=int)
 parser.add_option("--output",default="output.root",help="Name of output root file to keep the histos (default: %default)")
+parser.add_option("--genEnergy",help="Generated energy of the sample",type=int)
 parser.add_option("--outDir",default="output",help="Output directory with all plots and files (default: %default)")
 
 (options,args)=parser.parse_args()
@@ -62,12 +63,12 @@ def main():
         #simHits = findSimHitsInOtherSide(df)
         #simHits.to_csv('%s/%s_%s_checkOtherSide.csv' %(options.outDir,options.input.replace(".root","").split("/")[-1],options.object), index=False)
         #When simcluster id will be here use the one below
-        ddf = df[ df["rechit_simclusterid"] >= 0 ]
-        recHitCalibration(ddf)
+        #ddf = df[ df["rechit_simclusterid"] >= 0 ]
+        recHitCalibration(df,tree,options.maxEvents,outDir,options.output,options.genEnergy,options.verbosityLevel)
         #recHitsCalib = recHitCalibration(df[ df["sClusMatchedHits"] != 9999])
        
     if (options.object == "LayerClusters"):
-        df = analyzeLayerClusters(ntuple,tree,options.maxEvents,outDir,options.output,options.verbosityLevel)
+        df = analyzeLayerClusters(ntuple,tree,options.maxEvents,outDir,options.output,options.genEnergy,options.verbosityLevel)
 
     if (options.object in ["ticlTrackstersEM","ticlTrackstersTrkEM","ticlTrackstersTrk","ticlTrackstersHAD","ticlTrackstersMerge","ticlSimTracksters"] ):
         df = analyzeTracksters(ntuple,tree,options.maxEvents,outDir,options.output,options.verbosityLevel)

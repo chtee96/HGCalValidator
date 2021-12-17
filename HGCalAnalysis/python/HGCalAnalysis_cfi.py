@@ -25,22 +25,27 @@ HGCalAnalysis = cms.EDAnalyzer(
     associatorSim = cms.untracked.InputTag("layerClusterSimClusterAssociationProducer"),
     #General event info
     SaveGeneralInfo = cms.untracked.bool(True),
+    HGCEEuncalibRecHitCollection = cms.InputTag('HGCalUncalibRecHit:HGCEEUncalibRecHits'),
+    HGCHEFuncalibRecHitCollection = cms.InputTag('HGCalUncalibRecHit:HGCHEFUncalibRecHits'),
+    HGCHEBuncalibRecHitCollection = cms.InputTag('HGCalUncalibRecHit:HGCHEBUncalibRecHits'),
     #RecHitsRaw tree
-    doRecHitsRawTree = cms.untracked.bool(True),
+    doRecHitsRawTree = cms.untracked.bool(False),
     #RecHits tree
     doRecHitsTree = cms.untracked.bool(True),
     #CaloParticle tree
     doCaloParticleTree = cms.untracked.bool(False),
     #SimCluster tree
-    doSimClustersTree = cms.untracked.bool(True),
+    doSimClustersTree = cms.untracked.bool(False),
     label_SimClusters = cms.InputTag("SimClusters"),
     label_SimClustersLevel = cms.InputTag("ClusterLevel"),
     #Layer Cluster tree
-    doLayerClustersTree = cms.untracked.bool(False),
+    doLayerClustersTree = cms.untracked.bool(True),
     label_layerClusterPlots = cms.InputTag("hgcalLayerClusters"),
     label_LCToCPLinking = cms.InputTag("LCToCP_association"),
     #Trackster and SimTrakcsters trees
     doTrackstersPlots = cms.untracked.bool(False),
+    doOnlyTrackstersMerge = cms.untracked.bool(True),
+    doEdges = cms.untracked.bool(False),
     label_TSToCPLinking = cms.InputTag("TSToCP_linking"),
     #SimTrackster from CPs tree
     #doSimTrackstersFromCPsPlots = cms.untracked.bool(True),
@@ -69,4 +74,4 @@ from Configuration.Eras.Modifier_phase2_hgcalV10_cff import phase2_hgcalV10
 phase2_hgcalV10.toModify(HGCalAnalysis, totallayers_to_monitor = cms.int32(50))
 
 from Configuration.Eras.Modifier_phase2_hgcalV12_cff import phase2_hgcalV12
-phase2_hgcalV12.toModify(HGCalAnalysis, totallayers_to_monitor = cms.int32(27))
+phase2_hgcalV12.toModify(HGCalAnalysis, totallayers_to_monitor = cms.int32(47))

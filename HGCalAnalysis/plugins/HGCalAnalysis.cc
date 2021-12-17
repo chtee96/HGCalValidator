@@ -68,7 +68,7 @@ private:
   //rechits raw from hit map
   hgcal_validation::recHitRawInfo fRecHitRawInfo;
   //rechits 
-  hgcal_validation::recHitInfo fRecHitInfo;
+  hgcal_validation::recHitInfo fRecHitInfo, fRecHitInfo_sc, fRecHitInfo_lc;
   //simClusters
   hgcal_validation::simClustersInfo fSimClustersInfo;
   //layerClusters
@@ -95,6 +95,8 @@ private:
   const bool doLayerClustersTree_;
   edm::InputTag label_layerClustersPlots_, label_LCToCPLinking_;
   const bool doTrackstersPlots_;
+  const bool doOnlyTrackstersMerge_;
+  const bool doEdges_;
   edm::InputTag label_TSToCPLinking_;
   std::vector<edm::InputTag> label_clustersmask;
   //const bool doSimTrackstersFromCPsPlots_;
@@ -113,6 +115,9 @@ private:
   edm::EDGetTokenT<std::vector<CaloParticle>> label_cp_fake;
   edm::EDGetTokenT<std::vector<SimVertex>> simVertices_;
   std::vector<edm::EDGetTokenT<std::vector<float>>> clustersMaskTokens_;
+  edm::EDGetTokenT<HGCeeUncalibratedRecHitCollection> eeUncalibRecHitCollection_;
+  edm::EDGetTokenT<HGChefUncalibratedRecHitCollection> hefUncalibRecHitCollection_;
+  edm::EDGetTokenT<HGChebUncalibratedRecHitCollection> hebUncalibRecHitCollection_;
   edm::EDGetTokenT<std::unordered_map<DetId, const HGCRecHit*>> hitMap_;
   edm::EDGetTokenT<hgcal::RecoToSimCollection> associatorMapRtS;
   edm::EDGetTokenT<hgcal::SimToRecoCollection> associatorMapStR;
@@ -148,6 +153,8 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
   label_layerClustersPlots_(pset.getParameter<edm::InputTag>("label_layerClusterPlots")),
   label_LCToCPLinking_(pset.getParameter<edm::InputTag>("label_LCToCPLinking")),
   doTrackstersPlots_(pset.getUntrackedParameter<bool>("doTrackstersPlots")),
+  doOnlyTrackstersMerge_(pset.getUntrackedParameter<bool>("doOnlyTrackstersMerge")),
+  doEdges_(pset.getUntrackedParameter<bool>("doEdges")),
   label_TSToCPLinking_(pset.getParameter<edm::InputTag>("label_TSToCPLinking")),
   label_clustersmask(pset.getParameter<std::vector<edm::InputTag>>("LayerClustersInputMask")),
 //  doSimTrackstersPlots_(pset.getUntrackedParameter<bool>("doSimTrackstersPlots")),
@@ -173,6 +180,10 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
 
   associatorMapSimtR = consumes<hgcal::SimToRecoCollectionWithSimClusters>(associatorSim_);
   associatorMapRtSim = consumes<hgcal::RecoToSimCollectionWithSimClusters>(associatorSim_);
+
+  eeUncalibRecHitCollection_ =  consumes<HGCeeUncalibratedRecHitCollection>(pset.getParameter<edm::InputTag>("HGCEEuncalibRecHitCollection"));
+  hefUncalibRecHitCollection_ = consumes<HGChefUncalibratedRecHitCollection>(pset.getParameter<edm::InputTag>("HGCHEFuncalibRecHitCollection"));
+  hebUncalibRecHitCollection_ = consumes<HGChebUncalibratedRecHitCollection>(pset.getParameter<edm::InputTag>("HGCHEBuncalibRecHitCollection"));
 
   hitMap_ = consumes<std::unordered_map<DetId, const HGCRecHit*>>(edm::InputTag("hgcalRecHitMapProducer"));
 
@@ -221,7 +232,8 @@ void HGCalAnalysis::beginJob() {
     //segmentation fault will be produced
     for (const auto& itag : label_tst) {
       hgcal_validation::createTrackstersBranches(fTree[itag.label()], fTrackstersInfo);
-      //Add to the trackster branches the relevant LayerCluster ones. 
+      //Add to the trackster branches the relevant LayerCluster and SimCluster ones. 
+      hgcal_validation::createSimClustersBranches(fTree["SimClusters"], fSimClustersInfo, fRecHitInfo);
       hgcal_validation::createLayerClustersBranches(fTree[itag.label()], fLayerClustersInfo);
 
     }
@@ -235,6 +247,25 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
   edm::ESHandle<CaloGeometry> geom = setup.getHandle(caloGeomToken_);
   tools_->setGeometry(*geom);
 
+  //Apart from the hitMap with rechits we need the uncalibrated rechits
+  //which may have duplicates.
+  const auto& ee_hits = event.get(eeUncalibRecHitCollection_);
+  const auto& fh_hits = event.get(hefUncalibRecHitCollection_);
+  const auto& bh_hits = event.get(hebUncalibRecHitCollection_);
+  std::unordered_map<DetId, std::vector<const HGCUncalibratedRecHit *> > UnCalibHitMap;
+  UnCalibHitMap.clear();
+    
+  for (const auto& hit : ee_hits) {
+    // std::cout << hit.id().rawId() << std::endl;
+    // std::cout << hit.amplitude() << std::endl;
+    UnCalibHitMap[hit.id()].emplace_back(&hit);
+  }
+  for (const auto& hit : fh_hits) { UnCalibHitMap[hit.id()].emplace_back(&hit); }
+  for (const auto& hit : bh_hits) { UnCalibHitMap[hit.id()].emplace_back(&hit); }
+
+  // for (const auto& hit : ee_hits) {
+  //   if (UnCalibHitMap[hit.id()].size() >=2) {std::cout << "SIZE " << UnCalibHitMap[hit.id()].size() << std::endl;;}
+  // }
   edm::Handle<std::unordered_map<DetId, const HGCRecHit*>> hitMapHandle;
   event.getByToken(hitMap_, hitMapHandle);
   const std::unordered_map<DetId, const HGCRecHit*>* hitMap = &*hitMapHandle;
@@ -263,8 +294,14 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
     edm::Handle<std::vector<SimCluster>> simClustersHandle;
     event.getByToken(simClusters_, simClustersHandle);
     std::vector<SimCluster> const& simClusters = *simClustersHandle;
-    
+
+    //To check also the unmatched rechits
+    hgcal_validation::initRecHitRawInfo(fRecHitRawInfo);
+    hgcal_validation::fillRecHitRawInfo(fRecHitRawInfo, *hitMap, tools_, totallayers_to_monitor_);
+
+    //This is for the matched ones
     hgcal_validation::initRecHitInfo(fRecHitInfo);
+    //Now to the SimClusters
     hgcal_validation::initSimClustersInfo(fSimClustersInfo);
     hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClusters, *hitMap, tools_, totallayers_to_monitor_);
     fTree["SimClusters"]->Fill();
@@ -281,7 +318,7 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
 
     if (doRecHitsTree_){hgcal_validation::initRecHitInfo(fRecHitInfo);}
     hgcal_validation::initLayerClustersInfo(fLayerClustersInfo);
-    hgcal_validation::fillLayerClustersInfo(fLayerClustersInfo, fRecHitInfo, clusters, 9999, 9999, false, *hitMap, tools_, totallayers_to_monitor_);
+    hgcal_validation::fillLayerClustersInfo(fLayerClustersInfo, fRecHitInfo, clusters, 9999, 9999, false, UnCalibHitMap, *hitMap, tools_, totallayers_to_monitor_);
     fTree["LayerClusters"]->Fill();
 
   }
@@ -320,19 +357,29 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
     event.getByToken(ticlSeedingTrkToken_, ticlSeedingTrkH);
     auto const& ticlSeedingTrk = *ticlSeedingTrkH.product();
 
+    edm::Handle<std::vector<SimCluster>> simClustersHandle;
+    event.getByToken(simClusters_, simClustersHandle);
+    std::vector<SimCluster> const& simClusters = *simClustersHandle;
+
     edm::Handle<reco::CaloClusterCollection> clusterHandle;
     event.getByToken(layerclusters_, clusterHandle);
     const reco::CaloClusterCollection& clusters = *clusterHandle;
 
     for (unsigned int wml = 0; wml < label_tstTokens.size(); wml++) {
+
+      //Will work only with merge collection for now
+      if ( doOnlyTrackstersMerge_ && label_tst[wml].label() != "ticlTrackstersMerge" ){ continue; }
+      
       edm::Handle<ticl::TracksterCollection> tracksterHandle;
       event.getByToken(label_tstTokens[wml], tracksterHandle);
       const ticl::TracksterCollection& tracksters = *tracksterHandle;
 
-      hgcal_validation::initRecHitInfo(fRecHitInfo);
+      hgcal_validation::initRecHitInfo(fRecHitInfo_sc);
+      hgcal_validation::initRecHitInfo(fRecHitInfo_lc);
+      hgcal_validation::initSimClustersInfo(fSimClustersInfo);
       hgcal_validation::initLayerClustersInfo(fLayerClustersInfo);
       hgcal_validation::initTrackstersInfo(fTrackstersInfo);
-      hgcal_validation::fillTrackstersInfo(fTrackstersInfo, fLayerClustersInfo, fRecHitInfo, tracksters, clusters, ticlSeedingGlobal, ticlSeedingTrk,*hitMap, tools_, totallayers_to_monitor_);
+      hgcal_validation::fillTrackstersInfo(fTrackstersInfo, fSimClustersInfo, fLayerClustersInfo, fRecHitInfo_sc, fRecHitInfo_lc, tracksters, simClusters, clusters, ticlSeedingGlobal, ticlSeedingTrk, UnCalibHitMap, *hitMap, tools_, doEdges_, totallayers_to_monitor_);
 
       fTree[label_tst[wml].label()]->Fill();
 

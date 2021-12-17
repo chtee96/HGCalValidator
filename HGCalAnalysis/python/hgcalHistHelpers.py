@@ -9,6 +9,18 @@ import pylab
 import plotly.graph_objects as go
 import matplotlib.ticker as ticker
 import math
+from RecoLocalCalo.HGCalRecProducers.HGCalRecHit_cfi import dEdX
+import settings
+
+#Mainly for the colors:
+#Instead of Green -> 125
+#Instead of Blue -> 122
+#Instead of Red -> 132
+#Instead of Orange -> 131
+#Instead of Magenta -> 123
+#Instead of Black -> 129
+
+ROOT.gROOT.ProcessLine(".x rootlogon.C")
 
 def histValue1D(fValues, histDict, tag="hist1D_", title="hist 1D", axunit="a.u.", binsBoundariesX=[10, -1, 1], ayunit="a.u.", verbosityLevel=0):
     """1D histograming of given list of values."""
@@ -64,21 +76,29 @@ def histValues2D(fValues, histDict, tag="hist2D_", title="hist 2D", axunit="a.u.
     return histDict
 
 
-def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", xaxistitle = "", yaxistitle = "", setLogY = False, latexComment="", funcsAndProps=None, verbosityLevel=0):
+def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", xaxistitle = "", yaxistitle = "", setLogY = False, latexComment="", funcsAndProps=None, verbosityLevel=0, ratioplot = False, systematics = False):
     """print/save list of histograms with their properties on one canvas"""
     # supress info messages
     ROOT.gErrorIgnoreLevel = ROOT.kInfo + 1
     # set default style values
-    ROOT.gStyle.SetPalette(ROOT.kBird)
+    #ROOT.gStyle.SetPalette(ROOT.kBird)
     ROOT.gStyle.SetOptStat(0)
-    ROOT.gStyle.SetPadTopMargin(0.08)
-    ROOT.gStyle.SetPadBottomMargin(0.12)
-    ROOT.gStyle.SetPadLeftMargin(0.12)
-    ROOT.gStyle.SetPadRightMargin(0.05)
+    #ROOT.gStyle.SetPadTopMargin(0.08)
+    #ROOT.gStyle.SetPadBottomMargin(0.12)
+    #ROOT.gStyle.SetPadLeftMargin(0.12)
+    #ROOT.gStyle.SetPadRightMargin(0.05)
     # create canvas
-    canvas = ROOT.TCanvas(outDir + tag, outDir + tag, 500, 500)
+    canvas = None
+    if ratioplot:
+        canvas = makeRatioPlotCanvas(name = tag)
+        canvas.cd(1)
+        if setLogY: ROOT.gPad.SetLogy()
+    else:
+        canvas = ROOT.TCanvas(outDir + tag, outDir + tag, settings.canvas_width, settings.canvas_height-150)
+        canvas.cd()
+
     # prepare the legend
-    leg = ROOT.TLegend(0.15, 0.90-len(histsAndProps)*0.07, 0.82, 0.9)
+    leg = ROOT.TLegend(0.55, 0.90-len(histsAndProps)*0.07, 0.92, 0.9)
     # leg.SetHeader("Energy of the clusters before/after filtering")
     leg.SetBorderSize(0)
     leg.SetFillColor(0)
@@ -105,13 +125,14 @@ def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", xaxistitle =
                 continue
             # if (type(hist) == ROOT.TH1F):
             #     hist.Rebin()
+        #customizeHisto(hist, ratioplot)
         x_maxs.append(hist.GetBinCenter(hist.FindLastBinAbove(1)))
-        hist.Scale(1./hist.Integral())
+        if hist.Integral() != 0 : hist.Scale(1./hist.Integral())
         hist.GetYaxis().SetTitle(yaxistitle)
         curr_max = hist.GetMaximum()
         if (curr_max < 1./3.): # temp. fix for hists with very different y_max
             y_maxs.append(curr_max)
-    # print "y_maxs: ", y_maxs
+    #print ("y_maxs",y_maxs)
     # loop over all histograms
     first = True
     for hist in histsAndProps:
@@ -128,13 +149,16 @@ def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", xaxistitle =
             hist.GetXaxis().SetTitleOffset(hist.GetXaxis().GetTitleOffset() * 1.2)
             hist.GetXaxis().SetTitle(xaxistitle)
             hist.GetYaxis().SetTitleOffset(hist.GetYaxis().GetTitleOffset() * 3.0)
+            #hist.GetYaxis().SetLabelSize(0.);
+            
             if (first):
                 if not setLogY:
                     hist.GetYaxis().SetRangeUser(0, max(y_maxs) * 1.4)
                     hist.GetXaxis().SetRangeUser(0, max(x_maxs) * 1.0)
-                #else: 
-                #    hist.GetYaxis().SetRangeUser(1, math.log10(max(y_maxs) * 1.4))
-                #    hist.GetXaxis().SetRangeUser(1, math.log10(max(x_maxs) * 1.0))
+                #else:
+                #    hist.SetMaximum( max(y_maxs) * 10. );
+                #    #hist.GetYaxis().SetRangeUser(1, pow(10., (max(y_maxs)) * 1.4))
+                #    hist.GetXaxis().SetRangeUser(0, max(x_maxs) * 1.0)
                 hist.Draw("hist0 goff")
                 first = False
             else:
@@ -148,12 +172,98 @@ def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", xaxistitle =
     # draw the rest
     leg.Draw("same")
     # print latex comments
-    ltx.SetTextColor(ROOT.kBlue)
+    ltx.SetTextColor(122)
     for k in range(len(latexComment)):
         ltx.DrawLatex(0.17, 0.86 - len(histsAndProps)*0.07 - k*0.07, latexComment[k])
     # print latex header
-    ltx.SetTextColor(ROOT.kBlack)
+    ltx.SetTextColor(129)
     ltx.DrawLatex(0.150, 0.935, "CMS Phase-2 Simulation, #sqrt{s} = 14 TeV")
+    canvas.cd()
+    
+    if ratioplot:
+        canvas.cd(2)
+        ROOT.gStyle.SetOptStat(0)
+        if settings.ratio_plot_grid :
+            ROOT.gPad.SetGridy()
+            ROOT.gPad.SetGridx()
+        first = True
+        icount = 0
+        refHist = None
+        for hist in histsAndProps:
+            # do not print/save empty histograms
+            if (type(hist) == ROOT.TH1F) or (type(hist) == ROOT.TH2F) or (type(hist) == ROOT.TH3F):
+                if hist.GetEntries() == 0:
+                    continue
+            # print and save
+            hist.SetTitle("")
+            if type(hist) == ROOT.TH1F and first == True :
+            #if type(hist) == ROOT.TH1F and icount == 0 :
+                refHist = hist
+                first = False
+                icount += 1
+                continue
+            if type(hist) == ROOT.TH1F and first == False :
+            #if type(hist) == ROOT.TH1F and icount != 0 :
+                #(errorHist,systHist) = make_stat_progression(hist, systematic_only=systematics)
+                #ROOT.SetOwnership(errorHist,0)
+                #ROOT.SetOwnership(systHist ,0)
+                #errorHist.GetXaxis().SetTitle(hist.GetXaxis().GetTitle())
+                #errorHist.GetYaxis().SetTitle('LC_{2,3,4,5}/LC_{1}')
+                #errorHist.GetYaxis().CenterTitle(True)
+                #systHist.GetXaxis().SetTitle(hist.GetXaxis().GetTitle())
+                #systHist.GetYaxis().SetTitle('LC_{2,3,4,5}/LC_{1}')
+                #systHist.GetYaxis().CenterTitle(True)
+                #errorHist.SetLineColor(histsAndProps[hist]["color"])
+                #errorHist.SetLineWidth(2)
+                #errorHist.SetStats(0)
+                print("icount",icount)
+                #if icount == 1: errorHist.Draw('E2')
+                #else: errorHist.Draw('E2,same')
+                #if systematics == True:
+                #    systHist.SetLineColor(histsAndProps[hist]["color"])
+                #    systHist.SetLineWidth(2)
+                #    systHist.SetStats(0)
+                #    systHist.Draw('E2,same')
+
+            
+                ratioHist = makeRatio(hist1 = hist, hist2 = refHist, isdata = True)
+                #ROOT.SetOwnership(ratioHist,0)
+                #ROOT.SetOwnership(line,0)
+                customizeHisto(ratioHist, ratioplot)
+                ratioHist.GetXaxis().SetTitle(hist.GetXaxis().GetTitle())
+                ratioHist.GetYaxis().SetTitle('LC_{2,3,4,5}/LC_{1}')
+                ratioHist.GetYaxis().CenterTitle(True)
+                ratioHist.SetStats(0)
+                
+                
+                if icount == 1:
+
+                    ratioHist.Draw('')
+                    line = ROOT.TLine(ratioHist.GetXaxis().GetXmin(),1,ratioHist.GetXaxis().GetXmax(),1)
+                    line.SetLineColor(4)
+                    line.SetLineStyle(7)
+                    line.Draw('same')
+
+                    (errorHist,systHist) = make_stat_progression(hist, systematic_only=systematics)
+                    #ROOT.SetOwnership(errorHist,0)
+                    #ROOT.SetOwnership(systHist ,0)
+                    systHist.GetXaxis().SetTitle(hist.GetXaxis().GetTitle())
+                    systHist.GetYaxis().SetTitle('LC_{2,3,4,5}/LC_{1}')
+                    systHist.GetYaxis().CenterTitle(True)
+                    errorHist.SetLineColor(histsAndProps[hist]["color"])
+                    errorHist.SetLineWidth(2)
+                    errorHist.SetStats(0)
+                    errorHist.Draw('E2,same')
+                    if systematics == True:
+                        systHist.SetLineColor(histsAndProps[hist]["color"])
+                        systHist.SetLineWidth(2)
+                        systHist.SetStats(0)
+                        systHist.Draw('E2,same')                   
+
+                else:
+                    ratioHist.Draw('same')
+                icount += 1
+  
     if setLogY: canvas.SetLogy()
     for imgType in imgTypes:
         canvas.SaveAs("{}/{}.{}".format(outDir, tag, imgType))
@@ -165,7 +275,7 @@ def histPrintSaveAll(histDict, outDir, tree):
     imgType = "png"
     outfile = ROOT.TFile("{}/{}".format(outDir, options.output), "recreate")
     canvas = ROOT.TCanvas(outDir, outDir, 500, 500)
-    canvas.SetLogy()
+    #canvas.SetLogy()
     if (options.verbosityLevel>=3): print( "histDict.items(): ", histDict.items())
     #Write tree
     tree.SetDirectory(outfile)
@@ -231,7 +341,7 @@ def profValues2D(fValues, histDict, tag="hist2D_", title="hist 2D", axunit="a.u.
             histDict[tag].Fill(valueX, valueY, valueZ, weight)
     return histDict
 
-def drawGraphs(graphsAndProps, grOptions, outDir, latexComment=[], tag="graphTest_", verbosityLevel=0):
+def drawGraphs(graphsAndProps, grOptions, outDir, latexComment=[], setLogY = False, tag="graphTest_", verbosityLevel=0):
     # supress info messages
     ROOT.gErrorIgnoreLevel = ROOT.kInfo + 1
     # set default style values
@@ -247,7 +357,7 @@ def drawGraphs(graphsAndProps, grOptions, outDir, latexComment=[], tag="graphTes
     legLowerBoundary = 0.85-len(graphsAndProps)*0.07
     if (legLowerBoundary<0.45): legLowerBoundary = 0.45
     leg = ROOT.TLegend(0.40, legLowerBoundary, 0.95, 0.9)
-    leg.SetHeader(grOptions['title'])
+    #leg.SetHeader(grOptions['title'])
     leg.SetBorderSize(0)
     leg.SetFillColor(0)
     leg.SetFillStyle(0)
@@ -258,7 +368,8 @@ def drawGraphs(graphsAndProps, grOptions, outDir, latexComment=[], tag="graphTes
     ltx.SetTextFont(42)
     ltx.SetTextSize(0.03)
     # set image extensions
-    imgTypes = ["pdf", "png", "root"]
+    #imgTypes = ["pdf", "png", "root"]
+    imgTypes = ["png"]
     # prepare latex comment
     ltx = ROOT.TLatex()
     ltx.SetNDC(ROOT.kTRUE)
@@ -311,8 +422,9 @@ def drawGraphs(graphsAndProps, grOptions, outDir, latexComment=[], tag="graphTes
     # draw the rest
     leg.Draw("same")
     # print common header
-    ltx.SetTextColor(ROOT.kBlack)
+    ltx.SetTextColor(129)
     ltx.DrawLatex(0.120, 0.935, "CMS Phase-2 Simulation, #sqrt{s} = 14 TeV")
+    if setLogY: canvas.SetLogy()
     # save
     for imgType in imgTypes:
         canvas.SaveAs("{}/{}.{}".format(outDir, tag, imgType))
@@ -320,11 +432,11 @@ def drawGraphs(graphsAndProps, grOptions, outDir, latexComment=[], tag="graphTes
 
 #---------------------------------------------------------------------------------------------------
 # print/save all histograms
-def histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel = 0):
+def histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel = 0, setLogY = False, removeOptStat = False, setLogz = True):
     imgType = "png"
     outfile = ROOT.TFile("{}/{}".format(outDir, output), "recreate")
     canvas = ROOT.TCanvas(outDir, outDir, 500, 500)
-    canvas.SetLogy()
+    if setLogY: canvas.SetLogy()
     if (verbosityLevel>=3): print( "histDict.items(): ", histDict.items())
     #Write tree
     tree.SetDirectory(outfile)
@@ -334,23 +446,59 @@ def histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel = 0):
         if (type(item) == ROOT.TH1F) or (type(item) == ROOT.TH2F) or (type(item) == ROOT.TH3F):
             if item.GetEntries() == 0:
                 continue
-        ROOT.gStyle.SetPalette(ROOT.kBird)
-        #ROOT.gStyle.SetOptStat(0)
-        ROOT.gStyle.SetOptStat(1101)
-        ROOT.gStyle.SetPadTopMargin(0.05)
-        ROOT.gStyle.SetPadBottomMargin(0.12)
-        ROOT.gStyle.SetPadLeftMargin(0.15)
-        ROOT.gStyle.SetPadRightMargin(0.02)
+        if removeOptStat: ROOT.gStyle.SetOptStat(0)
+        else : ROOT.gStyle.SetOptStat(1101)
+        #ROOT.gStyle.SetPalette(ROOT.kBird)
+        #ROOT.gStyle.SetPadTopMargin(0.05)
+        #ROOT.gStyle.SetPadBottomMargin(0.12)
+        #ROOT.gStyle.SetPadLeftMargin(0.12)
+        #ROOT.gStyle.SetPadRightMargin(0.12)
         if type(item) == ROOT.TH1F:
             item.Draw("hist0")
             item.Write()
             canvas.SaveAs("{}/{}.{}".format(outDir, key, imgType))
         if type(item) == ROOT.TH2F:
+            acustompalette()
+            ex1 = ROOT.TExec("ex1","acustompalette();");
+            ex1.Draw();
             item.Draw("colz")
+            if setLogz == True: canvas.SetLogz()
+            canvas.Update()
+
+            palette = item.GetListOfFunctions().FindObject("palette")
+            if palette:
+                palette.__class__ = ROOT.TPaletteAxis
+                palette.SetX1NDC(0.89)
+                palette.SetX2NDC(0.94)
+                #palette.SetY1NDC(0.1)
+                #palette.SetY2NDC(0.6)
+                palette.GetAxis().SetTickSize(.01)
+                #palette.GetAxis().SetTitle("Si thick")
+                palette.GetAxis().SetTitleOffset(0.82);
+                #palette.GetAxis().LabelsOption("v")
+                ROOT.gPad.Update()
+
             item.Write()
             canvas.SaveAs("{}/{}.{}".format(outDir, key, imgType))
         if type(item) == ROOT.TProfile2D:
+            acustompalette()
+            ex1 = ROOT.TExec("ex1","acustompalette();");
+            ex1.Draw();
             item.Draw("")
+
+            palette = item.GetListOfFunctions().FindObject("palette")
+            if palette:
+                palette.__class__ = ROOT.TPaletteAxis
+                palette.SetX1NDC(0.89)
+                palette.SetX2NDC(0.94)
+                #palette.SetY1NDC(0.1)
+                #palette.SetY2NDC(0.6)
+                palette.GetAxis().SetTickSize(.01)
+                #palette.GetAxis().SetTitle("Si thick")
+                palette.GetAxis().SetTitleOffset(0.82);
+                #palette.GetAxis().LabelsOption("v")
+                ROOT.gPad.Update()
+            
             item.Write()
             canvas.SaveAs("{}/{}.{}".format(outDir, key, imgType))
         elif type(item) == ROOT.TH3F:
@@ -381,7 +529,7 @@ def fitGauss(hist, paramRangeFactor=1.8):
     gaussStd = fGauss.GetParameter(2)
     return (hist, gaussMean, gaussStd)
 
-def fitResolution(graph, fitLineColor = ROOT.kBlue, fitLineStyle = 1, rangeLimitDn = 5., rangeLimitUp = 100.):
+def fitResolution(graph, fitLineColor = 122, fitLineStyle = 1, rangeLimitDn = 5., rangeLimitUp = 100.):
     # define the range of the fit from the hist mean and RMS
     stochasticTermLimitDn = 0
     stochasticTermLimitUp = 300
@@ -481,24 +629,381 @@ def isMatched(eta,phi, genParticles,minDR = 0.5):
             belong=1
             break
     return belong
+
 #---------------------------------------------------------------------------------------------------
-def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,verbosityLevel = 0):
+def make_stat_progression(myHisto,systematics={},
+                          systematic_only=True,
+                          combine_with_systematic=True):
+    #This function returns a function with the statistical precision in each bin
+    
 
-    histDict = {}
+    statPrecision = myHisto.Clone('_ratioErrors_')
+    systPrecision = myHisto.Clone('_ratioSysErrors_')
+    statPrecision.SetFillColorAlpha(settings.ratio_error_band_color,settings.ratio_error_band_opacity)
+    statPrecision.SetFillStyle(settings.ratio_error_band_style)
+    statPrecision.SetMarkerColorAlpha(0,0)
 
+    systPrecision.SetFillColorAlpha(settings.ratio_syst_band_color,settings.ratio_error_band_opacity)
+    systPrecision.SetFillStyle(settings.ratio_syst_band_style)
+    systPrecision.SetMarkerColorAlpha(0,0)
+
+
+    if len(systematics)==0 : systematic_only = False
+    for ibin in range(myHisto.GetNbinsX()+1):
+        y    = statPrecision.GetBinContent(ibin)
+        stat = statPrecision.GetBinError  (ibin)
+        if( y > 0 ):
+            statPrecision.SetBinContent(ibin,      1 )
+            statPrecision.SetBinError  (ibin, stat/y )
+        else:
+            statPrecision.SetBinContent(ibin,   1 )
+            statPrecision.SetBinError  (ibin,   0 )
+        if systematic_only:
+            up_err_sum2 = 0
+            dw_err_sum2 = 0
+            if( y > 0 ):
+                up_err_sum2 = (stat/y)*(stat/y)
+                dw_err_sum2 = (stat/y)*(stat/y)
+                for key,syst in systematics.items():
+                    up_diff   = (syst.up_histo.GetBinContent  (ibin)- y)/y
+                    dw_diff   = (syst.down_histo.GetBinContent(ibin)- y)/y
+                    if( up_diff > 0 ):
+                        up_err_sum2  += up_diff*up_diff
+                    if( dw_diff < 0 ):
+                        dw_err_sum2  += dw_diff*dw_diff
+            up_error = math.sqrt(up_err_sum2)
+            dw_error = math.sqrt(dw_err_sum2)
+            band_max   = 1 + up_error
+            band_min   = 1 - dw_error
+            
+            systPrecision.SetBinContent(ibin, (band_max + band_min)/2.0);
+            systPrecision.SetBinError  (ibin, (band_max - band_min)/2.0);
+    statPrecision.GetYaxis().SetRangeUser(0.1, 5.0)
+    systPrecision.GetYaxis().SetRangeUser(0.1, 5.0)
+    return (statPrecision, systPrecision)
+
+#---------------------------------------------------------------------------------------------------
+def makeRatio(hist1,hist2,ymax=2.1,ymin=0,norm=False, isdata =False):
+    """returns the ratio plot hist2/hist1
+    if one of the histograms is a stack put it in as argument 2!"""
+    if norm:
+        try:
+            hist1.Scale(1/hist1.Integral())
+            hist2.Scale(1/hist2.Integral())
+        except(ZeroDivisionError):
+            pass
+    retH = hist1.Clone()
+    retH.Divide(hist2)
+    if isdata:
+        for ibin in range(hist2.GetNbinsX()+1):
+            ymc  = hist2.GetBinContent(ibin);
+            stat = hist1.GetBinError  (ibin);
+            if (ymc>0):
+                retH.SetBinError  (ibin,stat/ymc);
+            else:
+                retH.SetBinError  (ibin,0);
+    ROOT.SetOwnership(retH,0)
+    return retH
+
+#---------------------------------------------------------------------------------------------------
+def makeRatioPlotCanvas(name=''):
+    """
+    returns a divided canvas for ratios
+    """
+    canv  = ROOT.TCanvas("c_" + name, name,settings.canvas_width,settings.canvas_height)
+    canv.cd()
+    #padup = ROOT.TPad("padup", "padup", 0, 0.4, 1, 1.0)
+    padup = ROOT.TPad("padup", "padup", 0, 0.3, 1, 1.0)
+    padup.SetNumber(1)
+    #paddw = ROOT.TPad("paddw", "paddw", 0, 0.0, 1, 0.4)
+    paddw = ROOT.TPad("paddw", "paddw", 0, 0.0, 1, 0.3)
+    paddw.SetNumber(2)
+    padup.Draw()
+    padup.SetTopMargin(0.08)
+    padup.SetBottomMargin(0.00)
+    padup.SetLeftMargin(0.14)
+    padup.SetRightMargin(0.05)
+    padup.SetFrameBorderMode(0)
+    paddw.Draw()
+    paddw.SetTopMargin(0.00)
+    paddw.SetBottomMargin(0.37)
+    paddw.SetLeftMargin(0.14)
+    paddw.SetRightMargin(0.05)
+    paddw.SetFrameBorderMode(0)
+    canv.cd()
+    #ROOT.SetOwnership(padup,0)
+    #ROOT.SetOwnership(paddw,0)
+    return canv
+
+#---------------------------------------------------------------------------------------------------
+def customizeHisto(hist, ratioplot = True):
+    hist.GetYaxis().SetTitleSize  (21)
+    hist.GetYaxis().SetTitleFont  (43)
+    hist.GetYaxis().SetTitleOffset(1.8)
+    hist.GetYaxis().SetLabelFont  (43)
+    hist.GetYaxis().SetLabelSize  (18)
+    if ratioplot :
+        hist.GetXaxis().SetTitleSize  (21)
+        hist.GetXaxis().SetTitleFont  (43)
+        hist.GetXaxis().SetTitleOffset(3.5)
+        hist.GetXaxis().SetLabelOffset(0.02)
+        hist.GetXaxis().SetLabelFont  (43)
+        hist.GetXaxis().SetLabelSize  (18)
+    else:
+        hist.GetXaxis().SetTitleSize  (21)
+        hist.GetXaxis().SetTitleFont  (43)
+        hist.GetXaxis().SetTitleOffset(1.5)
+        hist.GetXaxis().SetLabelOffset(0.01)
+        hist.GetXaxis().SetLabelFont  (43)
+        hist.GetXaxis().SetLabelSize  (18)
+
+#---------------------------------------------------------------------------------------------------
+def DataMCratio(histMC,histData,
+                log=False,
+                xTitle="",
+                yTitle="",
+                drawMCOpt="",
+                drawDataOpt="",
+                norm=False,
+                ratioMin=0.7,
+                ratioMax=1.3):
+    
+    """Takes two histograms as inputs and returns a canvas with a ratio plot of the two.
+    The two optional arguments are for the x Axis and y Axis titles"""
+
+    c = makeRatioPlotCanvas()
+    pad1 = c.cd(1)
+    pad2 = c.cd(2)
+    c.cd(1)
+
+    if log: pad1.SetLogy()
+    yMax = max(histData.GetMaximum(),histMC.GetMaximum())
+    yMin = 0
+
+    if log: yMin = min(histData.GetMinimum(),histMC.GetMinimum())
+    else  : yMin = 0
+    if log: yMax = 100*yMax
+    else  : yMax = 1.2*yMax
+
+    try:
+        histData.GetYaxis().SetRangeUser(0,1.2*yMax)
+    except(ReferenceError):
+        h = pad1.DrawFrame(histMC.GetXaxis().GetXmin(),yMin,histMC.GetXaxis().GetXmax(),yMax)
+        ROOT.SetOwnership(h,0)
+    if not norm:
+        drawStatErrBand(histMC,drawMCOpt)
+        histData.Draw  ('same,'+drawDataOpt)
+    else:
+        histMC   = histMC.DrawNormalized(drawMCOpt)
+        histData = histData.DrawNormalized("same"+ drawDataOpt)
+
+    histData.GetYaxis().SetRangeUser(yMin,yMax)
+    c.cd()
+    c.cd(2)
+
+    (errorHist,systHist) = make_stat_progression(histMC)
+    ROOT.SetOwnership(errorHist,0)
+    ROOT.SetOwnership(systHist ,0)
+    errorHist.GetXaxis().SetTitle(xTitle)
+    errorHist.GetYaxis().SetTitle(yTitle)
+    #
+    errorHist.Draw('E2')
+    sysrHist.Draw('E2,same')
+    ratioHist = makeRatio(histData,histMC,ymax= ratioMax,ymin=ratioMin,norm=norm)
+    ROOT.SetOwnership(ratioHist,0)
+    ratioHist.GetXaxis().SetTitle(xTitle)
+    ratioHist.GetYaxis().SetTitle(yTitle)
+    
+    line = ROOT.TLine(ratioHist.GetXaxis().GetXmin(),1,ratioHist.GetXaxis().GetXmax(),1)
+    line.SetLineColor(4)
+    line.Draw()
+    ROOT.SetOwnership(line,0)
+    ratioHist.Draw('same')
+    c.cd()
+    return c
+
+#---------------------------------------------------------------------------------------------------
+def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLevel = 0):
+
+    #-------------------------------------------------------------------------
     #Sum of LCs energy over generated energy
-    ddfl = dfl[ (dfl['nhitAll'] >= 1)]
+    ddfl = dfl.loc[ (dfl['nhitAll'] >= 1)].copy()
     sumLCene = ddfl.groupby(['EventId']).agg( LCEneSum  = ('energy','sum'))
     #print(sumLCene.head())
     #print(sumLCene[['LCEneSum']].to_numpy())
-    theEgen = np.full(len(sumLCene[['LCEneSum']].to_numpy().flatten()),100.) #Hardcoded yes
+    theEgen = np.full(len(sumLCene[['LCEneSum']].to_numpy().flatten()),GenEnergy) #Hardcoded yes
     sumLCeneOverEgen = sumLCene[['LCEneSum']].to_numpy().flatten() / theEgen
-    #print(sumLCeneOverEgen)
+    print(sumLCeneOverEgen,sumLCene[['LCEneSum']],theEgen)
 
     histDict_sumLCene = {}
-    histDict_sumLCene = histValue1D(sumLCeneOverEgen, histDict_sumLCene, tag = "sumLCeneOverEgen", title = "Cumulative LCs energy over generated energy",   axunit = "Sum of LCs Energy (GeV)", binsBoundariesX = [100, 0, 1], ayunit = "#Events/0.01 GeV", verbosityLevel=verbosityLevel)
+    histDict_sumLCene = histValue1D(sumLCeneOverEgen, histDict_sumLCene, tag = "sumLCeneOverEgen", title = "Cumulative LCs energy over generated energy",   axunit = "#sum #left(LCs Energy#right)/Egen", binsBoundariesX = [200, 0, 2], ayunit = "#Events", verbosityLevel=verbosityLevel)
     histPrintSaveAll(histDict_sumLCene, outDir, output, tree, verbosityLevel)
 
+    #-------------------------------------------------------------------------
+    #LC energy over LC size: So, average cell energy
+    histDict_LCeneOverLCsize = {}
+    LCeneOverLCsize = ddfl[['energy']].to_numpy() / ddfl[['nhitAll']].to_numpy()
+    LCeneOverLCsize = LCeneOverLCsize.flatten()
+    histDict_LCeneOverLCsize = histValue1D(LCeneOverLCsize, histDict_LCeneOverLCsize, tag = "LCeneOverLCsize", title = "LC energy over LC size",   axunit = "Average Cell Energy (GeV)", binsBoundariesX = [200, 0, 2], ayunit = "#Events/0.01 GeV", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_LCeneOverLCsize, outDir, output, tree, verbosityLevel, setLogY = True)
+
+    #-------------------------------------------------------------------------
+    #LC energy over LC size Per size: So, average cell energy per size. 
+    histDict_LCeneOverLCsizePerSize = {}
+    LCeneOverLCsizePerSize1 = ddfl[ (ddfl['nhitAll'] == 1)][['energy']].to_numpy() / ddfl[ (ddfl['nhitAll'] == 1)][['nhitAll']].to_numpy()
+    LCeneOverLCsizePerSize2 = ddfl[ (ddfl['nhitAll'] == 2)][['energy']].to_numpy() / ddfl[ (ddfl['nhitAll'] == 2)][['nhitAll']].to_numpy()
+    LCeneOverLCsizePerSize3 = ddfl[ (ddfl['nhitAll'] == 3)][['energy']].to_numpy() / ddfl[ (ddfl['nhitAll'] == 3)][['nhitAll']].to_numpy()
+    LCeneOverLCsizePerSize4 = ddfl[ (ddfl['nhitAll'] == 4)][['energy']].to_numpy() / ddfl[ (ddfl['nhitAll'] == 4)][['nhitAll']].to_numpy()
+    LCeneOverLCsizePerSizege5 = ddfl[ (ddfl['nhitAll'] >= 5)][['energy']].to_numpy() / ddfl[ (ddfl['nhitAll'] >= 5)][['nhitAll']].to_numpy()
+
+    for i, obj in enumerate([LCeneOverLCsizePerSize1,LCeneOverLCsizePerSize2,LCeneOverLCsizePerSize3,LCeneOverLCsizePerSize4,LCeneOverLCsizePerSizege5]):
+        histDict_LCeneOverLCsizePerSize[i] = {}
+        thetitle = "LC energy over LC size from LCs of size %s" %(i+1)
+        if i == 4: thetitle = "LC energy over LC size from LCs of size >= %s" %(i+1)
+        histDict_LCeneOverLCsizePerSize[i] = histValue1D(obj, histDict_LCeneOverLCsizePerSize[i], tag = "LCeneOverLCsizeForLCSize%s"%(i+1), title = thetitle,  axunit = "Average Cell Energy (GeV)", binsBoundariesX = [200, 0, 2], ayunit = "#Events/0.01 GeV ", verbosityLevel=verbosityLevel)
+        print(histDict_LCeneOverLCsizePerSize[i])
+        histPrintSaveAll(histDict_LCeneOverLCsizePerSize[i], outDir, output, tree, verbosityLevel)
+
+    histsAndProps = {histDict_LCeneOverLCsizePerSize[0]['LCeneOverLCsizeForLCSize1']:{"leg":"LC size == 1","color":132}, histDict_LCeneOverLCsizePerSize[1]['LCeneOverLCsizeForLCSize2']:{"leg":"LC size == 2","color":122}, histDict_LCeneOverLCsizePerSize[2]['LCeneOverLCsizeForLCSize3']:{"leg":"LC size == 3","color":125}, histDict_LCeneOverLCsizePerSize[3]['LCeneOverLCsizeForLCSize4']:{"leg":"LC size == 4","color":131}, histDict_LCeneOverLCsizePerSize[4]['LCeneOverLCsizeForLCSize5']:{"leg":"LC size >= 5","color":129} }
+    
+    # plot these histograms on top of each other 
+    histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "LCeneOverLCsizeNormForLCVariousSizes", xaxistitle = "Average Cell Energy (GeV)", yaxistitle = "a.u./0.01 GeV ", setLogY = True, latexComment = "", funcsAndProps = None, ratioplot = True)
+
+    #-------------------------------------------------------------------------
+    #LC energy over LC size Per size vs Layer: So, average cell energy per size vs Layer. 
+    histDict_LCeneOverLCsizePerSizeVsLayer = {}
+    #LCeneOverLCsizePerSize1 = ddfl[ (ddfl['nhitAll'] == 1)][['energy']].to_numpy() / ddfl[ (ddfl['nhitAll'] == 1)][['nhitAll']].to_numpy()
+    #LCeneOverLCsizePerSize2 = ddfl[ (ddfl['nhitAll'] == 2)][['energy']].to_numpy() / ddfl[ (ddfl['nhitAll'] == 2)][['nhitAll']].to_numpy()
+    #LCeneOverLCsizePerSize3 = ddfl[ (ddfl['nhitAll'] == 3)][['energy']].to_numpy() / ddfl[ (ddfl['nhitAll'] == 3)][['nhitAll']].to_numpy()
+    #LCeneOverLCsizePerSize4 = ddfl[ (ddfl['nhitAll'] == 4)][['energy']].to_numpy() / ddfl[ (ddfl['nhitAll'] == 4)][['nhitAll']].to_numpy()
+    #LCeneOverLCsizePerSizege5 = ddfl[ (ddfl['nhitAll'] >= 5)][['energy']].to_numpy() / ddfl[ (ddfl['nhitAll'] >= 5)][['nhitAll']].to_numpy()
+
+    LayerNumberPerSize1 = ddfl[ (ddfl['nhitAll'] == 1)][['layer']].to_numpy()
+    LayerNumberPerSize2 = ddfl[ (ddfl['nhitAll'] == 2)][['layer']].to_numpy()
+    LayerNumberPerSize3 = ddfl[ (ddfl['nhitAll'] == 3)][['layer']].to_numpy()
+    LayerNumberPerSize4 = ddfl[ (ddfl['nhitAll'] == 4)][['layer']].to_numpy()
+    LayerNumberPerSizege5 = ddfl[ (ddfl['nhitAll'] >= 5)][['layer']].to_numpy()
+
+    LCeneOverLCsizePerSize1vsLayer = np.column_stack((LayerNumberPerSize1, LCeneOverLCsizePerSize1))
+    LCeneOverLCsizePerSize2vsLayer = np.column_stack((LayerNumberPerSize2, LCeneOverLCsizePerSize2))
+    LCeneOverLCsizePerSize3vsLayer = np.column_stack((LayerNumberPerSize3, LCeneOverLCsizePerSize3))
+    LCeneOverLCsizePerSize4vsLayer = np.column_stack((LayerNumberPerSize4, LCeneOverLCsizePerSize4))
+    LCeneOverLCsizePerSizege5vsLayer = np.column_stack((LayerNumberPerSizege5, LCeneOverLCsizePerSizege5))
+
+    for i, obj in enumerate([LCeneOverLCsizePerSize1vsLayer,LCeneOverLCsizePerSize2vsLayer,LCeneOverLCsizePerSize3vsLayer,LCeneOverLCsizePerSize4vsLayer,LCeneOverLCsizePerSizege5vsLayer]):
+        histDict_LCeneOverLCsizePerSizeVsLayer[i] = {}
+        thetitle = "LC energy over LC size from LCs of size %s vs Layer" %(i+1)
+        if i == 4: thetitle = "LC energy over LC size from LCs of size >= %s vs Layer" %(i+1)
+        histDict_LCeneOverLCsizePerSizeVsLayer[i] = histValues2D(obj, histDict_LCeneOverLCsizePerSizeVsLayer[i], tag = "LCeneOverLCsizeForLCSize%sVsLayer"%(i+1), title = thetitle,  axunit = "Layer number", binsBoundariesX = [100, 0,100],  ayunit = "Average Cell Energy (GeV)", binsBoundariesY = [200, 0, 2], verbosityLevel=verbosityLevel)
+        #histDict_LCeneOverLCsizePerSizeVsLayer[i] = profValues2D(obj, histDict_LCeneOverLCsizePerSizeVsLayer[i], tag = "LCeneOverLCsizeProfileForLCSize%sVsLayer"%(i+1), title = thetitle,  axunit = "Layer number", binsBoundariesX = [100, 0, 100],  ayunit = "Average Cell Energy (GeV)", binsBoundariesY = [200, 0, 2], verbosityLevel=verbosityLevel)
+        print(histDict_LCeneOverLCsizePerSizeVsLayer[i])
+        histPrintSaveAll(histDict_LCeneOverLCsizePerSizeVsLayer[i], outDir + "/PerLayer", output, tree, verbosityLevel, removeOptStat = True)
+
+    #histsAndProps = {histDict_LCeneOverLCsizePerSizeVsLayer[0]['LCeneOverLCsizeForLCSize1']:{"leg":"LC size == 1","color":132}, histDict_LCeneOverLCsizePerSizeVsLayer[1]['LCeneOverLCsizeForLCSize2']:{"leg":"LC size == 2","color":122}, histDict_LCeneOverLCsizePerSizeVsLayer[2]['LCeneOverLCsizeForLCSize3']:{"leg":"LC size == 3","color":125}, histDict_LCeneOverLCsizePerSizeVsLayer[3]['LCeneOverLCsizeForLCSize4']:{"leg":"LC size == 4","color":131}, histDict_LCeneOverLCsizePerSizeVsLayer[4]['LCeneOverLCsizeForLCSize5']:{"leg":"LC size >= 5","color":129} }
+    
+    # plot these histograms on top of each other 
+    #histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "LCeneOverLCsizeNormForLCVariousSizes", xaxistitle = "Average Cell Energy (GeV)", yaxistitle = "a.u./0.01 GeV ", setLogY = True, latexComment = "", funcsAndProps = None)
+
+    #-------------------------------------------------------------------------
+    #LC energy over LC size Per size: So, average cell energy per size all in one plot for each layer
+    #So, total plots = #layers and in each plot #size cases
+    #Again, we will start from the per LC dataframe
+    histDict_LCenevsLayerPerSize = {}
+        
+    #LCenevsLayerPerSize = dfl.groupby(['layer','nhitAll'])[['energy']]
+    #LCeplps[layer][size] -> energy column to numpy
+    LCeplps = {}
+    histDict_LCenevsLayerPerSize = {}
+    for lay in dfl['layer'].unique():
+        LCeplps[lay] = {}
+        histDict_LCenevsLayerPerSize[lay] = {}
+        for sz in range(0,6): #1->5
+            LCeplps[lay][sz] = dfl.query("nhitAll == @sz & layer == @lay ")[['energy']].to_numpy()
+            #print(lay,sz,LCeplps[lay][sz])
+            histDict_LCenevsLayerPerSize[lay][sz] = {}
+            histDict_LCenevsLayerPerSize[lay][sz] = histValue1D(LCeplps[lay][sz], histDict_LCenevsLayerPerSize[lay][sz], tag = "LCeneLayer%sSize%s" %(lay,sz), title = "LC energy for Layer %s and LC size %s" %(lay,sz), axunit = "LC energy (GeV)", binsBoundariesX = [200, 0, 20], ayunit = "#a.u./0.1 GeV", verbosityLevel=verbosityLevel)
+
+        histsAndProps = {
+            histDict_LCenevsLayerPerSize[lay][1]['LCeneLayer%sSize1'%(lay)]:{"leg":"LC size == 1","color":132},
+            histDict_LCenevsLayerPerSize[lay][2]['LCeneLayer%sSize2'%(lay)]:{"leg":"LC size == 2","color":122},
+            histDict_LCenevsLayerPerSize[lay][3]['LCeneLayer%sSize3'%(lay)]:{"leg":"LC size == 3","color":125},
+            histDict_LCenevsLayerPerSize[lay][4]['LCeneLayer%sSize4'%(lay)]:{"leg":"LC size == 4","color":131},
+            histDict_LCenevsLayerPerSize[lay][5]['LCeneLayer%sSize5'%(lay)]:{"leg":"LC size >= 5","color":129}
+        }
+    
+        # plot these histograms on top of each other 
+        histsPrintSaveSameCanvas(histsAndProps, outDir + "/PerLayer", tag = "LCEnergyNormLayerForLCVariousSizes_Layer%s" %(lay), xaxistitle = "LC energy (GeV)", yaxistitle = "a.u./0.01 GeV ", setLogY = True, latexComment = "", funcsAndProps = None)
+
+    '''
+    graphsAndProps = {}
+    grOptions = {}
+
+    LCenePerSize1 = df[ (df['nhitAll'] == 1)][['energy']].to_numpy().mean()
+    LCenePerSize2 = df[ (df['nhitAll'] == 2)][['energy']].to_numpy().mean() 
+    LCenePerSize3 = df[ (df['nhitAll'] == 3)][['energy']].to_numpy().mean() 
+    LCenePerSize4 = df[ (df['nhitAll'] == 4)][['energy']].to_numpy().mean() 
+    LCenePerSizege5 = df[ (df['nhitAll'] >= 5)][['energy']].to_numpy().mean()
+
+    LayerPerSize1 = df[ (df['nhitAll'] == 1)][['rechit_layer']].to_numpy().mean()
+    LayerPerSize2 = df[ (df['nhitAll'] == 2)][['rechit_layer']].to_numpy().mean() 
+    LayerPerSize3 = df[ (df['nhitAll'] == 3)][['rechit_layer']].to_numpy().mean() 
+    LayerPerSize4 = df[ (df['nhitAll'] == 4)][['rechit_layer']].to_numpy().mean() 
+    LayerPerSizege5 = df[ (df['nhitAll'] >= 5)][['rechit_layer']].to_numpy().mean()
+
+    graphsAndProps[ROOT.TGraph(len(LayerPerSize1), LayerPerSize1, LCenePerSize1)] = {"leg":"LC size == 1","color":132, "MarkerStyle": 21, "LineStyle": 4},
+    graphsAndProps[ROOT.TGraph(len(LayerPerSize2), LayerPerSize2, LCenePerSize2)] = {"leg":"LC size == 2","color":122, "MarkerStyle": 22, "LineStyle": 5}
+    graphsAndProps[ROOT.TGraph(len(LayerPerSize3), LayerPerSize3, LCenePerSize3)] = {"leg":"LC size == 3","color":125, "MarkerStyle": 23, "LineStyle": 6}
+    graphsAndProps[ROOT.TGraph(len(LayerPerSize4), LayerPerSize4, LCenePerSize4)] = {"leg":"LC size == 4","color":131, "MarkerStyle": 24, "LineStyle": 7}
+    graphsAndProps[ROOT.TGraph(len(LayerPerSizege5), LayerPerSizege5, LCenePerSizege5)] = {"leg":"LC size >= 5","color":129, "MarkerStyle": 25, "LineStyle": 8} 
+
+    grOptions['Xaxis'] = "Layer number"
+    grOptions['Yaxis'] = "LC Energy (GeV)"
+
+    
+    drawGraphs(graphsAndProps, grOptions, outDir, tag=type+"_vs_"+vsDep+"_"+ pidmap[pidSelected] + "_scenarios_" + "_".join(scenarios) + "_" + tag)
+
+    drawGraphs(graphsAndProps, grOptions, outDir, latexComment=[], setLogY = True, tag="LCEneVsLayerForVariousSizes", verbosityLevel=verbosityLevel):
+    '''
+    #-------------------------------------------------------------------------
+    #LC energy Fraction vs Layer per size all in one plot
+    #We will start from the per LC dataframe
+    histDict_LCeneFractionvsLayerPerSize = {}
+        
+    #LCeneFractionvsLayerPerSize = dfl.groupby(['layer','nhitAll'])[['energy']]
+    #LCefrplps[layer][size] -> energy column to numpy
+    LCeplps = {}
+    LCefrplps = {}
+    histDict_LCeneFractionvsLayerPerSize = {}
+    for lay in dfl['layer'].unique():
+        LCeplps[lay] = {}
+        LCefrplps[lay] = {}
+        histDict_LCeneFractionvsLayerPerSize[lay] = {}
+        for sz in range(0,6): #1->5
+            LCeplps[lay][sz] = dfl.query("nhitAll == @sz & layer == @lay ")[['energy']].to_numpy()
+            theEgen = np.full(len(LCeplps[lay][sz].flatten()),GenEnergy) 
+            LCefrplps[lay][sz] = LCeplps[lay][sz].flatten() / theEgen
+            #print(lay,sz,LCefrplps[lay][sz],LCefrplps[lay][sz])
+            histDict_LCeneFractionvsLayerPerSize[lay][sz] = {}
+            histDict_LCeneFractionvsLayerPerSize[lay][sz] = histValue1D(LCefrplps[lay][sz], histDict_LCeneFractionvsLayerPerSize[lay][sz], tag = "LCeneFractionLayer%sSize%s" %(lay,sz), title = "LC energy Fraction for Layer %s and LC size %s" %(lay,sz), axunit = "LC energy fraction", binsBoundariesX = [40, 0, 0.4], ayunit = "#a.u.", verbosityLevel=verbosityLevel)
+
+        histsAndProps = {
+            histDict_LCeneFractionvsLayerPerSize[lay][1]['LCeneFractionLayer%sSize1'%(lay)]:{"leg":"LC size == 1","color":132},
+            histDict_LCeneFractionvsLayerPerSize[lay][2]['LCeneFractionLayer%sSize2'%(lay)]:{"leg":"LC size == 2","color":122},
+            histDict_LCeneFractionvsLayerPerSize[lay][3]['LCeneFractionLayer%sSize3'%(lay)]:{"leg":"LC size == 3","color":125},
+            histDict_LCeneFractionvsLayerPerSize[lay][4]['LCeneFractionLayer%sSize4'%(lay)]:{"leg":"LC size == 4","color":131},
+            histDict_LCeneFractionvsLayerPerSize[lay][5]['LCeneFractionLayer%sSize5'%(lay)]:{"leg":"LC size >= 5","color":129}
+        }
+    
+        # plot these histograms on top of each other 
+        histsPrintSaveSameCanvas(histsAndProps, outDir + "/PerLayer", tag = "LCEnergyFractionNormLayerForLCVariousSizes_Layer%s" %(lay), xaxistitle = "LC energy fraction", yaxistitle = "a.u.", setLogY = True, latexComment = "", funcsAndProps = None)
+
+    #-------------------------------------------------------------------------
+    histDict_LCenevsLCsize = {}
+    LCenevsLCsize = ddfl[['energy','nhitAll']].to_numpy()
+    histDict_LCenevsLCsize = histValues2D(LCenevsLCsize, histDict_LCenevsLCsize, tag = "LCenevsLCsize", title = "LC energy vs LC size", axunit = "LC energy (GeV)", binsBoundariesX = [20, 0, 20], ayunit = "LC size", binsBoundariesY=[50, 0., 50.], weighted2D=False, verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_LCenevsLCsize, outDir, output, tree, verbosityLevel, setLogY = True, removeOptStat = True, setLogz = True)
+
+    #-------------------------------------------------------------------------
     #Sum of the cells energy belonging to LCs of specific sizes. Essentially, a double check of the LC.energy() method. 
     cellsFromLCEneSumPerSize = df.groupby(['EventId','nhitAll']).agg( cellsFromLCEneSum  = ('rechit_energy','sum'))
     print(cellsFromLCEneSumPerSize)
@@ -511,15 +1016,132 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,verbosityLevel = 0):
     cellsFromLCEneSumPerSize = ddf.groupby(['EventId']).agg( cellsFromLCEneSum  = ('rechit_energy','sum'))
     cellEnSum_LC_Sizege5 = cellsFromLCEneSumPerSize[['cellsFromLCEneSum']].to_numpy().flatten()
     print(cellEnSum_LC_Size1, cellEnSum_LC_Size2, cellEnSum_LC_Size3, cellEnSum_LC_Size4, cellEnSum_LC_Sizege5)
-    #histDict[i] = histValue1D(cellEnSum_LC_Size1, histDict, tag = "CellsEnergySumForLCSize1", title = "Cells Energy from LCs of size 1",   axunit = "Cells Energy (GeV)", binsBoundariesX = [100, 0, 100], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
+    #histDict[i] = histValue1D(cellEnSum_LC_Size1, histDict, tag = "CellsEnergySumForLCSize1", title = "Cells Energy from LCs of size 1",   axunit = "Cells Energy (GeV)", binsBoundariesX = [GenEnergy, 0, GenEnergy], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
+
+    histDict = {}
 
     for i, obj in enumerate([cellEnSum_LC_Size1,cellEnSum_LC_Size2,cellEnSum_LC_Size3,cellEnSum_LC_Size4,cellEnSum_LC_Sizege5]):
         histDict[i] = {}
         thetitle = "Cells Energy Sum from LCs of size %s" %(i+1)
         if i == 4: thetitle = "Cells Energy Sum from LCs of size >= %s" %(i+1)
-        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergySumForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Sum (GeV)", binsBoundariesX = [100, 0, 100], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
+        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergySumForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Sum (GeV)", binsBoundariesX = [GenEnergy, 0, GenEnergy], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
         histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
 
+    histsAndProps = {histDict[0]['CellsEnergySumForLCSize1']:{"leg":"LC size == 1","color":132}, histDict[1]['CellsEnergySumForLCSize2']:{"leg":"LC size == 2","color":122}, histDict[2]['CellsEnergySumForLCSize3']:{"leg":"LC size == 3","color":125}, histDict[3]['CellsEnergySumForLCSize4']:{"leg":"LC size == 4","color":131}, histDict[4]['CellsEnergySumForLCSize5']:{"leg":"LC size >= 5","color":123} }
+    
+    # plot these histograms on top of each other 
+    histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyNormSumForLCVariousSizes", xaxistitle = "Cells Energy (GeV)", yaxistitle = "a.u./1 GeV ", setLogY = False, latexComment = "", funcsAndProps = None)
+
+    #-------------------------------------------------------------------------
+    #Sum of the cells energy belonging to LCs of specific sizes. Essentially, a double check of the LC.energy() method. 
+    #Cut off at 300 MeV (0.3 GeV) for LC size 1
+    df_cut = df[ (df['rechit_energy'] < 0.3) & (df['nhitAll'] == 1) ]
+    print(df_cut)
+    cellsFromLCEneSumPerSize = df_cut.groupby(['EventId','nhitAll']).agg( cellsFromLCEneSum  = ('rechit_energy','sum'))
+    print(cellsFromLCEneSumPerSize)
+    cellEnSum_LC_Size1 = cellsFromLCEneSumPerSize.query("nhitAll == 1")[['cellsFromLCEneSum']].to_numpy().flatten()
+    #No cut for the rest
+    cellsFromLCEneSumPerSize = df.groupby(['EventId','nhitAll']).agg( cellsFromLCEneSum  = ('rechit_energy','sum'))
+    cellEnSum_LC_Size2 = cellsFromLCEneSumPerSize.query("nhitAll == 2")[['cellsFromLCEneSum']].to_numpy().flatten()
+    cellEnSum_LC_Size3 = cellsFromLCEneSumPerSize.query("nhitAll == 3")[['cellsFromLCEneSum']].to_numpy().flatten()
+    cellEnSum_LC_Size4 = cellsFromLCEneSumPerSize.query("nhitAll == 4")[['cellsFromLCEneSum']].to_numpy().flatten()
+    #A little differently for the >=5 case
+    ddf = df[ (df['nhitAll'] >= 5)]
+    cellsFromLCEneSumPerSize = ddf.groupby(['EventId']).agg( cellsFromLCEneSum  = ('rechit_energy','sum'))
+    cellEnSum_LC_Sizege5 = cellsFromLCEneSumPerSize[['cellsFromLCEneSum']].to_numpy().flatten()
+    print(cellEnSum_LC_Size1, cellEnSum_LC_Size2, cellEnSum_LC_Size3, cellEnSum_LC_Size4, cellEnSum_LC_Sizege5)
+    #histDict[i] = histValue1D(cellEnSum_LC_Size1, histDict, tag = "CellsEnergySumForLCSize1", title = "Cells Energy from LCs of size 1",   axunit = "Cells Energy (GeV)", binsBoundariesX = [GenEnergy, 0, GenEnergy], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
+
+    histDict = {}
+
+    for i, obj in enumerate([cellEnSum_LC_Size1,cellEnSum_LC_Size2,cellEnSum_LC_Size3,cellEnSum_LC_Size4,cellEnSum_LC_Sizege5]):
+        histDict[i] = {}
+        thetitle = "Cells Energy Sum from LCs of size %s" %(i+1)
+        if i == 4: thetitle = "Cells Energy Sum from LCs of size >= %s" %(i+1)
+        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergySum300MeVcutForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Sum (GeV)", binsBoundariesX = [GenEnergy, 0, GenEnergy], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
+        histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
+
+    histsAndProps = {histDict[0]['CellsEnergySum300MeVcutForLCSize1']:{"leg":"LC size == 1 with E_{cell} < 300 MeV","color":132}, histDict[1]['CellsEnergySum300MeVcutForLCSize2']:{"leg":"LC size == 2","color":122}, histDict[2]['CellsEnergySum300MeVcutForLCSize3']:{"leg":"LC size == 3","color":125}, histDict[3]['CellsEnergySum300MeVcutForLCSize4']:{"leg":"LC size == 4","color":131}, histDict[4]['CellsEnergySum300MeVcutForLCSize5']:{"leg":"LC size >= 5","color":123} }
+    
+    # plot these histograms on top of each other 
+    histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyNormSumForLCVariousSizes_300MeV_cut_forLC1", xaxistitle = "Cells Energy (GeV)", yaxistitle = "a.u./1 GeV ", setLogY = False, latexComment = "", funcsAndProps = None)
+
+    #-------------------------------------------------------------------------
+    #Sum of the cells energy belonging to LCs of specific sizes in MIPs. In contrary to the next approach
+    #approach here uncalib energy is coming from Uncalibrated rechits which is directly in MIPs.
+    #So, the results here will be different to the results below since the results here doesn't
+    #contain the cce or regional em factors.
+    cellsFromLCEneSumPerSize = df.groupby(['EventId','nhitAll']).agg( cellsFromLCEneSum  = ('rechit_uncalib_energy','sum'))
+    print(cellsFromLCEneSumPerSize)
+    cellEnSum_LC_Size1 = cellsFromLCEneSumPerSize.query("nhitAll == 1")[['cellsFromLCEneSum']].to_numpy().flatten()
+    cellEnSum_LC_Size2 = cellsFromLCEneSumPerSize.query("nhitAll == 2")[['cellsFromLCEneSum']].to_numpy().flatten()
+    cellEnSum_LC_Size3 = cellsFromLCEneSumPerSize.query("nhitAll == 3")[['cellsFromLCEneSum']].to_numpy().flatten()
+    cellEnSum_LC_Size4 = cellsFromLCEneSumPerSize.query("nhitAll == 4")[['cellsFromLCEneSum']].to_numpy().flatten()
+    #A little differently for the >=5 case
+    ddf = df[ (df['nhitAll'] >= 5)]
+    cellsFromLCEneSumPerSize = ddf.groupby(['EventId']).agg( cellsFromLCEneSum  = ('rechit_uncalib_energy','sum'))
+    cellEnSum_LC_Sizege5 = cellsFromLCEneSumPerSize[['cellsFromLCEneSum']].to_numpy().flatten()
+    print(cellEnSum_LC_Size1, cellEnSum_LC_Size2, cellEnSum_LC_Size3, cellEnSum_LC_Size4, cellEnSum_LC_Sizege5)
+    #histDict[i] = histValue1D(cellEnSum_LC_Size1, histDict, tag = "CellsEnergySumForLCSize1", title = "Cells Energy from LCs of size 1",   axunit = "Cells Energy (GeV)", binsBoundariesX = [GenEnergy, 0, GenEnergy], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
+
+    histDict = {}
+
+    for i, obj in enumerate([cellEnSum_LC_Size1,cellEnSum_LC_Size2,cellEnSum_LC_Size3,cellEnSum_LC_Size4,cellEnSum_LC_Sizege5]):
+        histDict[i] = {}
+        thetitle = "Cells Energy Sum from LCs of size %s" %(i+1)
+        if i == 4 or i == 1:
+            thetitle = "Cells Energy Sum in MIPs from LCs of size >= %s" %(i+1)
+            histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergySumInMIPsFromUncalibForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Sum (MIPs)", binsBoundariesX = [200, 0, 10000], ayunit = "#Events/50 MIP", verbosityLevel=verbosityLevel)
+        else: 
+            thetitle = "Cells Energy Sum in MIPs from LCs of size %s" %(i+1)
+            histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergySumInMIPsFromUncalibForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Sum (MIPs)", binsBoundariesX = [100, 0, 1000], ayunit = "#Events/10 MIP", verbosityLevel=verbosityLevel)
+        histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
+
+    #histsAndProps = {histDict[0]['CellsEnergySumInMIPsFromUncalibForLCSize1']:{"leg":"LC size == 1","color":132}, histDict[1]['CellsEnergySumInMIPsFromUncalibForLCSize2']:{"leg":"LC size == 2","color":122}, histDict[2]['CellsEnergySumInMIPsFromUncalibForLCSize3']:{"leg":"LC size == 3","color":125}, histDict[3]['CellsEnergySumInMIPsFromUncalibForLCSize4']:{"leg":"LC size == 4","color":131}, histDict[4]['CellsEnergySumInMIPsFromUncalibForLCSize5']:{"leg":"LC size >= 5","color":123} }
+    
+    # plot these histograms on top of each other 
+    #histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyNormSumInMIPsFromUncalibForLCVariousSizes", xaxistitle = "Cells Energy (GeV)", yaxistitle = "a.u./1 GeV ", setLogY = False, latexComment = "", funcsAndProps = None)
+
+    
+    #-------------------------------------------------------------------------
+    #Sum of the cells energy belonging to LCs of specific sizes in MIPs. So, this
+    #cannot be taken from LC.energy(). We should undo the calibration of each cell and then sum
+    #The uncalibrated energy will be rechit_energy (GeV) * (1/dedxWeights*0.001) (MIP/GeV), so
+    #regional e/m factors and cce corrections are still applied.
+    #Observe the manipulation below to get dEdxWeights with the convention 0 to 99. 
+    dEdxWeights_allLayers = np.append( np.array(dEdX.weights[1:]), np.array(dEdX.weights[1:]) ) 
+    #Layer clusters with at least one hit
+    ddf = df.loc[ (df['nhitAll'] >= 1) ].copy()
+    ddf["rechit_uncalib_energy"] = ddf.apply(lambda row: row["rechit_energy"] / (dEdxWeights_allLayers[int(row["rechit_layer"])] * 0.001),axis=1)
+
+    cellsFromUncalibLCEneSumPerSize = ddf.groupby(['EventId','nhitAll']).agg( cellsFromUncalibLCEneSum  = ('rechit_uncalib_energy','sum'))
+    print(cellsFromUncalibLCEneSumPerSize)
+    cellUncalibEnSum_LC_Size1 = cellsFromUncalibLCEneSumPerSize.query("nhitAll == 1")[['cellsFromUncalibLCEneSum']].to_numpy().flatten()
+    cellUncalibEnSum_LC_Size2 = cellsFromUncalibLCEneSumPerSize.query("nhitAll == 2")[['cellsFromUncalibLCEneSum']].to_numpy().flatten()
+    cellUncalibEnSum_LC_Size3 = cellsFromUncalibLCEneSumPerSize.query("nhitAll == 3")[['cellsFromUncalibLCEneSum']].to_numpy().flatten()
+    cellUncalibEnSum_LC_Size4 = cellsFromUncalibLCEneSumPerSize.query("nhitAll == 4")[['cellsFromUncalibLCEneSum']].to_numpy().flatten()
+    #A little differently for the >=5 case
+    dddf = df.loc[ (df['nhitAll'] >= 5) ].copy()
+    dddf["rechit_uncalib_energy"] = dddf.apply(lambda row: row["rechit_energy"] / (dEdxWeights_allLayers[int(row["rechit_layer"])] * 0.001),axis=1)
+    cellsFromUncalibLCEneSumPerSize = dddf.groupby(['EventId']).agg( cellsFromUncalibLCEneSum  = ('rechit_uncalib_energy','sum'))
+    cellUncalibEnSum_LC_Sizege5 = cellsFromUncalibLCEneSumPerSize[['cellsFromUncalibLCEneSum']].to_numpy().flatten()
+    print(cellUncalibEnSum_LC_Size1, cellUncalibEnSum_LC_Size2, cellUncalibEnSum_LC_Size3, cellUncalibEnSum_LC_Size4, cellUncalibEnSum_LC_Sizege5)
+    #histDict[i] = histValue1D(cellEnSum_LC_Size1, histDict, tag = "CellsEnergySumForLCSize1", title = "Cells Energy from LCs of size 1",   axunit = "Cells Energy (GeV)", binsBoundariesX = [GenEnergy, 0, GenEnergy], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
+
+    histDict = {}
+
+    for i, obj in enumerate([cellUncalibEnSum_LC_Size1,cellUncalibEnSum_LC_Size2,cellUncalibEnSum_LC_Size3,cellUncalibEnSum_LC_Size4,cellUncalibEnSum_LC_Sizege5]):
+        histDict[i] = {}
+        if i == 4:
+            thetitle = "Cells Energy Sum in MIPs from LCs of size >= %s" %(i+1)
+            histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergySumInMIPsForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Sum (MIPs)", binsBoundariesX = [200, 0, 10000], ayunit = "#Events/50 MIP", verbosityLevel=verbosityLevel)
+        else: 
+            thetitle = "Cells Energy Sum in MIPs from LCs of size %s" %(i+1)
+            histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergySumInMIPsForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Sum (MIPs)", binsBoundariesX = [100, 0, 1000], ayunit = "#Events/10 MIP", verbosityLevel=verbosityLevel)
+        histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
+   
+
+    #-------------------------------------------------------------------------
     #Max energy belonging to LCs of specific sizes.
     cellsFromLCEneMaxPerSize = df.groupby(['EventId','nhitAll']).agg( cellsFromLCEneMax  = ('rechit_energy','max'))
     print(cellsFromLCEneMaxPerSize)
@@ -537,14 +1159,15 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,verbosityLevel = 0):
         histDict[i] = {}
         thetitle = "Cells Energy Max from LCs of size %s" %(i+1)
         if i == 4: thetitle = "Cells Energy Max from LCs of size >= %s" %(i+1)
-        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergyMaxForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Max (GeV)", binsBoundariesX = [100, 0, 100], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
+        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergyMaxForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Max (GeV)", binsBoundariesX = [20, 0, 20], ayunit = "#Events/1 GeV ", verbosityLevel=verbosityLevel)
         histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
 
-    #histsAndProps = {histDict[0]['CellsEnergyMaxForLCSize1']:{"leg":"LC size == 1","color":ROOT.kRed}, histDict[1]['CellsEnergyMaxForLCSize2']:{"leg":"LC size == 2","color":ROOT.kBlue}, histDict[2]['CellsEnergyMaxForLCSize3']:{"leg":"LC size == 3","color":ROOT.kGreen}, histDict[3]['CellsEnergyMaxForLCSize4']:{"leg":"LC size == 4","color":ROOT.kOrange}, histDict[4]['CellsEnergyMaxForLCSize5']:{"leg":"LC size >= 5","color":ROOT.kBlack} }
+    #histsAndProps = {histDict[0]['CellsEnergyMaxForLCSize1']:{"leg":"LC size == 1","color":132}, histDict[1]['CellsEnergyMaxForLCSize2']:{"leg":"LC size == 2","color":122}, histDict[2]['CellsEnergyMaxForLCSize3']:{"leg":"LC size == 3","color":125}, histDict[3]['CellsEnergyMaxForLCSize4']:{"leg":"LC size == 4","color":131}, histDict[4]['CellsEnergyMaxForLCSize5']:{"leg":"LC size >= 5","color":129} }
     
     # plot these histograms on top of each other 
     #histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyMaxNormForLCVariousSizes", xaxistitle = "Cells Energy (GeV)", yaxistitle = "a.u./0.01 GeV ", latexComment = "", funcsAndProps = None)
 
+    #-------------------------------------------------------------------------
     #Cells energy belonging to LCs of specific sizes.
     cellsFromLCEnePerSize1 = df[ (df['nhitAll'] == 1)][['rechit_energy']].to_numpy().flatten()
     cellsFromLCEnePerSize2 = df[ (df['nhitAll'] == 2)][['rechit_energy']].to_numpy().flatten()
@@ -557,14 +1180,11 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,verbosityLevel = 0):
         histDict[i] = {}
         thetitle = "Cells Energy from LCs of size %s" %(i+1)
         if i == 4: thetitle = "Cells Energy from LCs of size >= %s" %(i+1)
-        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergyForLCSize%s"%(i+1), title = thetitle,   axunit = "Cells Energy (GeV)", binsBoundariesX = [100, 0, 1], ayunit = "#Events/0.01 GeV ", verbosityLevel=verbosityLevel)
+        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergyForLCSize%s"%(i+1), title = thetitle,   axunit = "Cells Energy (GeV)", binsBoundariesX = [200, 0, 2], ayunit = "#Events/0.01 GeV ", verbosityLevel=verbosityLevel)
         print(histDict[i])
         histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
 
-    #histsAndProps = { htemp1 : {"leg":"LC size == 1","color":ROOT.kRed}, htemp2 : {"leg":"LC size == 2","color":ROOT.kBlue}, htemp3 : {"leg":"LC size == 3","color":ROOT.kGreen}, htemp4 : {"leg":"LC size == 4","color":ROOT.kOrange}, htemp5 : {"leg":"LC size >= 5","color":ROOT.kBlack} }
-
-    
-    histsAndProps = {histDict[0]['CellsEnergyForLCSize1']:{"leg":"LC size == 1","color":ROOT.kRed}, histDict[1]['CellsEnergyForLCSize2']:{"leg":"LC size == 2","color":ROOT.kBlue}, histDict[2]['CellsEnergyForLCSize3']:{"leg":"LC size == 3","color":ROOT.kGreen}, histDict[3]['CellsEnergyForLCSize4']:{"leg":"LC size == 4","color":ROOT.kOrange}, histDict[4]['CellsEnergyForLCSize5']:{"leg":"LC size >= 5","color":ROOT.kBlack} }
+    histsAndProps = {histDict[0]['CellsEnergyForLCSize1']:{"leg":"LC size == 1","color":132}, histDict[1]['CellsEnergyForLCSize2']:{"leg":"LC size == 2","color":122}, histDict[2]['CellsEnergyForLCSize3']:{"leg":"LC size == 3","color":125}, histDict[3]['CellsEnergyForLCSize4']:{"leg":"LC size == 4","color":131}, histDict[4]['CellsEnergyForLCSize5']:{"leg":"LC size >= 5","color":123}, histDict_LCeneOverLCsize["LCeneOverLCsize"]:{"leg":"Average cell energy","color":129} }
     
     # plot these histograms on top of each other 
     histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyNormForLCVariousSizes", xaxistitle = "Cells Energy (GeV)", yaxistitle = "a.u./0.01 GeV ", setLogY = True, latexComment = "", funcsAndProps = None)
@@ -572,6 +1192,214 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,verbosityLevel = 0):
     #histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel)
 
 
+#---------------------------------------------------------------------------------------------------
+def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,verbosityLevel = 0):
+
+    histDict = {}
+    #For the fit that was previously produced the regional em factors.
+    #kept only for crosscheck and historical reasons.
+    eratioboundaries = {}
+    eratioboundaries["CE_E_Front_120um"] = [0.6 , 1.1]##[0.85 , 1.15]#[0.6 , 0.9][0.85 , 1.15]
+    eratioboundaries["CE_E_Front_200um"] = [0.6 , 1.1]#[0.85 , 1.15]#[0.6 , 0.9][0.85 , 1.15]
+    eratioboundaries["CE_E_Front_300um"] = [0.6 , 1.1]#[0.8 , 1.2]#[0.6 , 1.1][0.75 , 1.45]
+    eratioboundaries["CE_H_Fine_120um"] = [0.5 , 1.2]
+    eratioboundaries["CE_H_Fine_200um"] = [0.5 , 1.2]
+    eratioboundaries["CE_H_Fine_300um"] = [0.5 , 1.2]
+    eratioboundaries["CE_H_Fine_300um_Var1"] = [0.5 , 1.2]
+    eratioboundaries["CE_H_Coarse_Scint"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_300um"] = [0.6 , 1.2] #[0.8 , 1.2]#[0.6 , 1.1][0.75 , 1.45]
+    eratioboundaries["CE_H_Fine_Scint"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Fine_Scint_Var1"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Fine_Scint_Var2"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_Scint_Var1"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_Scint_Var2"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_Scint_4285"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_Scint_4295"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_Scint_4305"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_Scint_4315"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_Scint_4325"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_Scint_4335"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_Scint_4345"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_Scint_4354"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+    eratioboundaries["CE_H_Coarse_Scint_4364"] =  [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
+
+    # Matched rechits plots
+    rHxEnFrSum_m = {}
+    recHitEneXFractionOverEgenSumPerThick = df_m.groupby(['EventId','sClusHitsThick','sClusHitsDet']).agg( recHitEneXFractionOverEgenSum  = ('recHitEneXFractionOvertheEgen','sum'))
+    #The object recHitEneXFractionOverEgenSumPerThick has a multiindex so let's save the quantities we want
+    #The conventions are: Tracker = 1, Muon = 2,Ecal = 3,Hcal = 4,Calo = 5,Forward = 6,VeryForward = 7,HGCalEE = 8,HGCalHSi = 9,HGCalHSc = 10,HGCalTrigger = 11 
+    rHxEnFrSum_m["CE_E_Front_120um"] = np.ma.masked_equal(recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
+    rHxEnFrSum_m["CE_E_Front_200um"] = np.ma.masked_equal(recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
+    rHxEnFrSum_m["CE_E_Front_300um"] =np.ma.masked_equal( recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
+    rHxEnFrSum_m["CE_H_Fine_120um"] = np.ma.masked_equal(recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
+    rHxEnFrSum_m["CE_H_Fine_200um"] = np.ma.masked_equal(recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
+    rHxEnFrSum_m["CE_H_Fine_300um"] =np.ma.masked_equal( recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
+    rHxEnFrSum_m["CE_H_Coarse_Scint"] = np.ma.masked_equal(recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
+    #Counting hits of specific thickness
+    rHitthick120 = len( df_m[ (df_m['sClusHitsThick'] == 120) ].to_numpy())
+    rHitthick200 = len( df_m[ (df_m['sClusHitsThick'] == 200) ].to_numpy())
+    rHitthick300 = len( df_m[ (df_m['sClusHitsThick'] == 300) ].to_numpy())
+    rHitthickScint = len( df_m[ (df_m['sClusHitsThick'] > 400) ].to_numpy())
+    rHitthickallmatched = df_m.shape[0]
+    
+    for i, obj in rHxEnFrSum_m.items():
+        print(i,obj)
+        histDict[i] = {}
+        histDict[i] = histValue1D(obj, histDict[i], tag = "SumEoverEgen_%s" %(i), title = "Reconstructed hits energy over generated energy for %s" %(i),   axunit = "#sum E_{i}/E_{gen}",    binsBoundariesX = [400, 0, 2], ayunit = "N(events)", verbosityLevel=verbosityLevel)
+        histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
+        #A version of this plot with the fit. 
+        mycE = ROOT.TCanvas("P22E%s_thick%s"%(GenEnergy,i), "P22E%s_thick%s"%(GenEnergy,i), 500, 500)
+        ROOT.gStyle.SetOptStat(0);
+        histDict[i]["SumEoverEgen_%s" %(i)].Draw("");
+        histDict[i]["SumEoverEgen_%s" %(i)].GetXaxis().SetRangeUser(eratioboundaries[i][0],eratioboundaries[i][1])
+        mycE.Update()
+ 
+        meanE = histDict[i]["SumEoverEgen_%s" %(i)].GetMean();
+        rmsE  = histDict[i]["SumEoverEgen_%s" %(i)].GetRMS();
+
+        #histDict[i]["SumEoverEgen_%s" %(i)].Fit("gaus","LR0","", meanE-0.5*rmsE, meanE+1.5*rmsE);
+        #histDict[i]["SumEoverEgen_%s" %(i)].Fit("gaus","LR0","");
+        histDict[i]["SumEoverEgen_%s" %(i)].Fit("gaus","LR0","",eratioboundaries[i][0],eratioboundaries[i][1]);
+        fitResult = histDict[i]["SumEoverEgen_%s" %(i)].GetFunction("gaus");
+
+        fitResult.SetLineColor(2);
+        meanFitE = fitResult.GetParameter(1);
+        rmsFitE = fitResult.GetParameter(2);
+        meanFitEerr = fitResult.GetParError(1);
+        rmsFitEerr = fitResult.GetParError(2);
+
+        fitResult.Draw("same")
+        #latx =  histDict[i]["SumEoverEgen_%s" %(i)].GetXaxis().GetXmin()+(histDict[i]["SumEoverEgen_%s" %(i)].GetXaxis().GetXmax()-histDict[i]["SumEoverEgen_%s" %(i)].GetXaxis().GetXmin())/20.
+        #laty =  histDict[i]["SumEoverEgen_%s" %(i)].GetMaximum()
+        latx = eratioboundaries[i][0] + (eratioboundaries[i][1]-eratioboundaries[i][0])/20.
+        laty =  histDict[i]["SumEoverEgen_%s" %(i)].GetMaximum()
+
+        lat = ROOT.TLatex()
+        lat.DrawLatex(latx,laty*0.9, "<#sum E_{i} * frac/E_{gen}> = %3.3f +/- %3.3f"%(fitResult.GetParameter(1),fitResult.GetParError(1))    );
+        lat.DrawLatex(latx,laty*0.8, "RMSfit = %3.3f +/- %3.3f"%(fitResult.GetParameter(2),fitResult.GetParError(2))   );
+        lat.DrawLatex(latx,laty*0.7, "RMS/meanfit = %3.3f"%(fitResult.GetParameter(2)/fitResult.GetParameter(1))   );
+        lat.DrawLatex(latx,laty*0.6, "#chi^{2}/N = %3.3f/%d = %3.3f"%(fitResult.GetChisquare(),fitResult.GetNDF(),fitResult.GetChisquare()/fitResult.GetNDF()) )
+        #lat.DrawLatex(latx,laty*0.5, "S/N = %d "% options.ecut    );
+        lat.DrawLatex(latx,laty*0.5, "# hits %d #mum = %3.3f %%"%(120,(rHitthick120 * 100.) / rHitthickallmatched ) );
+        lat.DrawLatex(latx,laty*0.4, "# hits %d #mum = %3.3f %%"%(200,(rHitthick200 * 100.) / rHitthickallmatched ) );
+        lat.DrawLatex(latx,laty*0.3, "# hits %d #mum = %3.3f %%"%(300,(rHitthick300 * 100.) / rHitthickallmatched ) );
+        lat.DrawLatex(latx,laty*0.2, "# hits Scint #mum = %3.3f %%"%((rHitthickScint * 100.) / rHitthickallmatched ) );
+        mycE.Update()
+        mycE.SaveAs("%s/P22E%s_thick%s.png"%(outDir,GenEnergy,i))
+ 
+
+    # Unmatched rechits plots
+    rHxEnFrSum_u = {}
+    recHitEneSumOvertheEgenPerThick_u = df_u.groupby(['EventId','sClusHitsThick','sClusHitsDet']).agg( recHitEneSumOvertheEgen  = ('recHitEneOvertheEgen','sum'))
+
+    rHxEnFrSum_u["CE_E_Front_120um"] = np.ma.masked_equal(recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
+    rHxEnFrSum_u["CE_E_Front_200um"] = np.ma.masked_equal(recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
+    rHxEnFrSum_u["CE_E_Front_300um"] =np.ma.masked_equal( recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
+    rHxEnFrSum_u["CE_H_Fine_120um"] = np.ma.masked_equal(recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
+    rHxEnFrSum_u["CE_H_Fine_200um"] = np.ma.masked_equal(recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
+    rHxEnFrSum_u["CE_H_Fine_300um"] =np.ma.masked_equal( recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
+    rHxEnFrSum_u["CE_H_Coarse_Scint"] = np.ma.masked_equal(recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
+
+    for i, obj in rHxEnFrSum_u.items():
+        print(i,obj)
+        histDict[i] = {}
+        histDict[i] = histValue1D(obj, histDict[i], tag = "SumEoverEgenUnmatched_%s" %(i), title = "Unmatched reconstructed hits energy over generated energy for %s" %(i),   axunit = "#sum E_{i}/E_{gen}",    binsBoundariesX = [400, 0, 2], ayunit = "N(events)", verbosityLevel=verbosityLevel)
+        histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
+
+    #----------------------------------------------------------
+    #RvsEtavsThickness
+    RechitRvsEtavsThickness = {}
+    RechitRvsEtavsThickness["CE_E_Front_120um"] = df_m.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['rechit_eta', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsEtavsThickness["CE_E_Front_200um"] = df_m.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['rechit_eta', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsEtavsThickness["CE_E_Front_300um"] = df_m.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['rechit_eta', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsEtavsThickness["CE_H_Fine_120um"] = df_m.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['rechit_eta', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsEtavsThickness["CE_H_Fine_200um"] = df_m.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['rechit_eta', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsEtavsThickness["CE_H_Fine_300um"] = df_m.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['rechit_eta', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsEtavsThickness["CE_H_Coarse_Scint"] = df_m.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['rechit_eta', 'R', 'sClusHitsThick']].to_numpy()
+
+    histDict = {}
+
+    for i, obj in RechitRvsEtavsThickness.items():
+        print(i,obj)
+        histDict[i] = {}
+        histDict[i] = profValues2D(obj, histDict[i], tag = "RvsEtavsThickness_%s" %(i), title = "R vs Eta vs Thickness for %s" %(i) , axunit = "|#eta|", binsBoundariesX = [200, 1.5, 3.5], ayunit = "R (cm)", binsBoundariesY=[100, 0., 300.], binsBoundariesZ=[0.,400.], weighted2D=False, verbosityLevel=verbosityLevel)
+
+        ROOT.gStyle.SetOptStat(0)
+        #ROOT.gStyle.SetOptStat(1101)
+
+        mycE1 = ROOT.TCanvas("P22E%s_RvsEtavsThickness_thick%s"%(GenEnergy,i), "P22E%s_RvsEtavsThickness_thick%s"%(GenEnergy,i), 500, 500)
+        acustompalette()
+        ex1 = ROOT.TExec("ex1","acustompalette();");
+        ex1.Draw();
+
+        histDict[i]["RvsEtavsThickness_%s"%(i)].Draw("COLZ")
+        #RvsEtavsThickness.GetXaxis().SetTitleOffset(0.95) 
+        mycE1.Update()
+
+        palette = histDict[i]["RvsEtavsThickness_%s"%(i)].GetListOfFunctions().FindObject("palette")
+        if palette:
+            palette.__class__ = ROOT.TPaletteAxis
+            palette.SetX1NDC(0.85)
+            palette.SetX2NDC(0.9)
+            #palette.SetY1NDC(0.1)
+            #palette.SetY2NDC(0.6)
+            palette.GetAxis().SetTickSize(.01)
+            palette.GetAxis().SetTitle("Si thick")
+            palette.GetAxis().SetTitleOffset(0.82);
+            #palette.GetAxis().LabelsOption("v")
+            ROOT.gPad.Update()
+
+        mycE1.SaveAs("%s/P22E%s_RvsEtavsThickness_thick_%s.png"%(outDir,GenEnergy,i))
+        #mycE1.Write()
+
+    #histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel)
+
+    #----------------------------------------------------------
+    # RechitRvsLayervsThickness
+    RechitRvsLayervsThickness = {}
+    RechitRvsLayervsThickness["CE_E_Front_120um"] = df_m.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['sClusHitsLayers', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsLayervsThickness["CE_E_Front_200um"] = df_m.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['sClusHitsLayers', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsLayervsThickness["CE_E_Front_300um"] = df_m.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['sClusHitsLayers', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsLayervsThickness["CE_H_Fine_120um"] = df_m.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['sClusHitsLayers', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsLayervsThickness["CE_H_Fine_200um"] = df_m.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['sClusHitsLayers', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsLayervsThickness["CE_H_Fine_300um"] = df_m.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['sClusHitsLayers', 'R', 'sClusHitsThick']].to_numpy()
+    RechitRvsLayervsThickness["CE_H_Coarse_Scint"] = df_m.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['sClusHitsLayers', 'R', 'sClusHitsThick']].to_numpy()
+
+    histDict = {}
+
+    for i, obj in RechitRvsLayervsThickness.items():
+        print(i,obj)
+        histDict[i] = {}
+        histDict[i] = profValues2D(obj, histDict[i], tag = "RvsLayervsThickness_%s" %(i), title = "R vs Layer vs Thickness for %s" %(i), axunit = "Layer", binsBoundariesX = [100, 0., 100.], ayunit = "R (cm)", binsBoundariesY=[100, 0., 300.], binsBoundariesZ=[0.,400.], weighted2D=False, verbosityLevel=verbosityLevel)
+
+        ROOT.gStyle.SetOptStat(0)
+
+        mycE2 = ROOT.TCanvas("P22E%s_RvsLayervsThickness_thick%s"%(GenEnergy,i), "P22E%s_RvsLayervsThickness_thick%s"%(GenEnergyi), 500, 500)
+
+        acustompalette()
+        ex1 = ROOT.TExec("ex1","acustompalette();");
+        ex1.Draw();
+
+        histDict[i]["RvsLayervsThickness_%s"%(i)].Draw("COLZ")
+        mycE2.Update()
+
+        palette = histDict[i]["RvsLayervsThickness_%s"%(i)].GetListOfFunctions().FindObject("palette")
+        if palette:
+            palette.__class__ = ROOT.TPaletteAxis
+            palette.SetX1NDC(0.85)
+            palette.SetX2NDC(0.9)
+            #palette.SetY1NDC(0.1)
+            #palette.SetY2NDC(0.6)
+            palette.GetAxis().SetTickSize(.01)
+            palette.GetAxis().SetTitle("Si thick")
+            palette.GetAxis().SetTitleOffset(0.82);
+            #palette.GetAxis().LabelsOption("v")
+            ROOT.gPad.Update()
+
+        mycE2.SaveAs("%s/P22E%s_RvsLayervsThickness_thick_%s.png"%(outDir,GenEnergy,i))
+        #----------------------------------------------------------
+
+        
 #---------------------------------------------------------------------------------------------------
 def drawEdges3d_plt(df,EventId):
     

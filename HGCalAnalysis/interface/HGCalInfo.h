@@ -188,6 +188,7 @@ namespace hgcal_validation
     std::vector<float> rechit_phi;
     std::vector<float> rechit_pt;
     std::vector<float> rechit_energy;
+    std::vector<float> rechit_uncalib_energy;
     std::vector<float> rechit_x;
     std::vector<float> rechit_y;
     std::vector<float> rechit_z;
@@ -204,7 +205,7 @@ namespace hgcal_validation
     std::vector<int> rechit_layerclusterid;
     std::vector<int> rechit_simclusterid;
     /* std::vector<int> rechit_caloparticleid; */
-    /* std::vector<int> rechit_tracksterid; */
+    std::vector<int> rechit_tracksterid;
     /* std::vector<int> rechit_simtracksterid; */
     std::vector<float> rechit_radius;
   };
@@ -214,6 +215,7 @@ namespace hgcal_validation
     rhInfo.rechit_phi.clear();
     rhInfo.rechit_pt.clear();
     rhInfo.rechit_energy.clear();
+    rhInfo.rechit_uncalib_energy.clear();
     rhInfo.rechit_x.clear();
     rhInfo.rechit_y.clear();
     rhInfo.rechit_z.clear();
@@ -229,6 +231,7 @@ namespace hgcal_validation
     rhInfo.rechit_flags.clear();
     rhInfo.rechit_layerclusterid.clear();
     rhInfo.rechit_simclusterid.clear();
+    rhInfo.rechit_tracksterid.clear();
     rhInfo.rechit_radius.clear();
   }
 
@@ -237,6 +240,7 @@ namespace hgcal_validation
     fTree->Branch("rechit_phi", &rhInfo.rechit_phi);
     fTree->Branch("rechit_pt", &rhInfo.rechit_pt);
     fTree->Branch("rechit_energy", &rhInfo.rechit_energy);
+    fTree->Branch("rechit_uncalib_energy", &rhInfo.rechit_uncalib_energy);
     fTree->Branch("rechit_x", &rhInfo.rechit_x);
     fTree->Branch("rechit_y", &rhInfo.rechit_y);
     fTree->Branch("rechit_z", &rhInfo.rechit_z);
@@ -251,6 +255,7 @@ namespace hgcal_validation
     fTree->Branch("rechit_isHalf", &rhInfo.rechit_isHalf);
     fTree->Branch("rechit_flags", &rhInfo.rechit_flags);
     fTree->Branch("rechit_layerclusterid", &rhInfo.rechit_layerclusterid);
+    fTree->Branch("rechit_tracksterid", &rhInfo.rechit_tracksterid);
     fTree->Branch("rechit_simclusterid", &rhInfo.rechit_simclusterid);
     fTree->Branch("rechit_radius", &rhInfo.rechit_radius);
   }
@@ -336,6 +341,7 @@ namespace hgcal_validation
     std::vector<std::vector<float>> simcluster_rechit_z;
     std::vector<std::vector<float>> simcluster_rechit_time;
     std::vector<std::vector<int>> simcluster_rechit_simclusterid;
+
 
   };
 
@@ -502,6 +508,7 @@ namespace hgcal_validation
 	  cells_v.push_back(this_cell.second);
 	  cells_type.push_back(thedetId.type());
 	  cells_zside.push_back(thedetId.zside());
+	  /* std::cout << "layerid " << layerid << " sh_detid.layer() " << thedetId.layer() << " recHitTools->getLayerWithOffset(sh_detid) " << recHitTools->getLayerWithOffset(sh_detid) << std::endl; */
 	} else {
 	  HGCScintillatorDetId thedetId = HGCScintillatorDetId(sh_detid);
 	  thickness = std::numeric_limits<std::float_t>::max();
@@ -511,6 +518,7 @@ namespace hgcal_validation
 	  cells_v.push_back(std::numeric_limits<unsigned int>::max());
 	  cells_type.push_back(thedetId.type());
 	  cells_zside.push_back(thedetId.zside());
+	  /* std::cout << "layerid " << layerid << " sh_detid.layer() " << thedetId.layer() << " recHitTools->getLayerWithOffset(sh_detid) " << recHitTools->getLayerWithOffset(sh_detid) << std::endl; */
 	}
 
 	hits_thickness.push_back(thickness);
@@ -530,7 +538,9 @@ namespace hgcal_validation
 
 	  matched_hits.push_back(sh_detid.rawId());
 	  //std::cout << "1 " << sh_detid.rawId() << std::endl;
-	  
+	  /* std::cout << recHitTools->getLayerWithOffset(itcheck->first) + layers * ((recHitTools->zside(itcheck->first) + 1) >> 1) - 1 << std::endl; */
+	  /* std::cout << "lastLayerEE() " << recHitTools->lastLayerEE() << " lastLayerFH() " << recHitTools->lastLayerFH() << " firstLayerBH() " << recHitTools->firstLayerBH() << " lastLayerBH() " << recHitTools->lastLayerBH() << " recHitTools->zside " << recHitTools->zside(itcheck->first) << std::endl; */
+
 	  rhInfo.rechit_eta.push_back(recHitTools->getEta(position));
 	  rhInfo.rechit_phi.push_back(recHitTools->getPhi(position));
 	  rhInfo.rechit_pt.push_back(recHitTools->getPt(position,energy));
@@ -545,6 +555,7 @@ namespace hgcal_validation
 	  //This simhit wasn't reconstructed. Save the info with as simclusterid -1, so that we know. 
 	  //std::cout << "2 " << sh_detid.rawId() << std::endl;
 	  matched_hits.push_back(9999);
+
 	  rhInfo.rechit_eta.push_back(-9999.);
 	  rhInfo.rechit_phi.push_back(-9999.);
 	  rhInfo.rechit_pt.push_back(-9999.);
@@ -554,6 +565,7 @@ namespace hgcal_validation
 	  rhInfo.rechit_z.push_back(-9999.);
 	  rhInfo.rechit_time.push_back(-9999.);
 	  rhInfo.rechit_simclusterid.push_back(-1);
+	  
 	}
 
 
@@ -629,6 +641,7 @@ namespace hgcal_validation
     std::vector<std::vector<float>> layerCluster_rechit_phi;
     std::vector<std::vector<float>> layerCluster_rechit_pt;
     std::vector<std::vector<float>> layerCluster_rechit_energy;
+    std::vector<std::vector<float>> layerCluster_rechit_uncalib_energy;
     std::vector<std::vector<float>> layerCluster_rechit_x;
     std::vector<std::vector<float>> layerCluster_rechit_y;
     std::vector<std::vector<float>> layerCluster_rechit_z;
@@ -645,7 +658,7 @@ namespace hgcal_validation
     std::vector<std::vector<int>> layerCluster_rechit_layerclusterid;
     /* std::vector<std::vector<int>> layerCluster_rechit_simclusterid; */
     /* std::vector<std::vector<int>> layerCluster_rechit_caloparticleid; */
-    /* std::vector<std::vector<int>> layerCluster_rechit_tracksterid; */
+    std::vector<std::vector<int>> layerCluster_rechit_tracksterid; 
     /* std::vector<std::vector<int>> layerCluster_rechit_simtracksterid; */
     std::vector<std::vector<float>> layerCluster_rechit_radius;
 
@@ -673,6 +686,7 @@ namespace hgcal_validation
     lcInfo.layerCluster_rechit_phi.clear();
     lcInfo.layerCluster_rechit_pt.clear();
     lcInfo.layerCluster_rechit_energy.clear();
+    lcInfo.layerCluster_rechit_uncalib_energy.clear();
     lcInfo.layerCluster_rechit_x.clear();
     lcInfo.layerCluster_rechit_y.clear();
     lcInfo.layerCluster_rechit_z.clear();
@@ -689,7 +703,7 @@ namespace hgcal_validation
     lcInfo.layerCluster_rechit_layerclusterid.clear();
     /* lcInfo.layerCluster_rechit_simclusterid.clear(); */
     /* lcInfo.layerCluster_rechit_caloparticleid.clear(); */
-    /* lcInfo.layerCluster_rechit_tracksterid.clear(); */
+    lcInfo.layerCluster_rechit_tracksterid.clear();
     /* lcInfo.layerCluster_rechit_simtracksterid.clear(); */
     lcInfo.layerCluster_rechit_radius.clear();
 
@@ -716,6 +730,7 @@ namespace hgcal_validation
     fTree->Branch("layerCluster_rechit_phi", &lcInfo.layerCluster_rechit_phi);
     fTree->Branch("layerCluster_rechit_pt", &lcInfo.layerCluster_rechit_pt);
     fTree->Branch("layerCluster_rechit_energy", &lcInfo.layerCluster_rechit_energy);
+    fTree->Branch("layerCluster_rechit_uncalib_energy", &lcInfo.layerCluster_rechit_uncalib_energy);
     fTree->Branch("layerCluster_rechit_x", &lcInfo.layerCluster_rechit_x);
     fTree->Branch("layerCluster_rechit_y", &lcInfo.layerCluster_rechit_y);
     fTree->Branch("layerCluster_rechit_z", &lcInfo.layerCluster_rechit_z);
@@ -732,7 +747,7 @@ namespace hgcal_validation
     fTree->Branch("layerCluster_rechit_layerclusterid", &lcInfo.layerCluster_rechit_layerclusterid);
     /* fTree->Branch("layerCluster_", &lcInfo.layerCluster_rechit_simclusterid); */
     /* fTree->Branch("layerCluster_", &lcInfo.layerCluster_rechit_caloparticleid); */
-    /* fTree->Branch("layerCluster_", &lcInfo.layerCluster_rechit_tracksterid); */
+    fTree->Branch("layerCluster_rechit_tracksterid", &lcInfo.layerCluster_rechit_tracksterid);
     /* fTree->Branch("layerCluster_", &lcInfo.layerCluster_rechit_simtracksterid); */
     fTree->Branch("layerCluster_rechit_radius", &lcInfo.layerCluster_rechit_radius);
 
@@ -745,6 +760,7 @@ namespace hgcal_validation
 			     unsigned int lcIdfromTrackster,
 			     unsigned int trId,
 			     bool fromTrackster,
+			     std::unordered_map<DetId, std::vector<const HGCUncalibratedRecHit *> > const& UnCalibHitMap,
 			     std::unordered_map<DetId, const HGCRecHit*> const& hitMap,
 			     std::shared_ptr<hgcal::RecHitTools> recHitTools, 
 			     unsigned int layers){
@@ -781,6 +797,10 @@ namespace hgcal_validation
 
 	const GlobalPoint position = recHitTools->getPosition(rh_detid);
 	const double energy = hit->energy();
+
+	// For the uncalibrated energy, which is in MIPs.
+ 	std::unordered_map<DetId, std::vector<const HGCUncalibratedRecHit *>>::const_iterator uncalib_check = UnCalibHitMap.find(rh_detid);
+	const double uncalib_energy = uncalib_check->second.front()->amplitude();
 	
 	//Want to check if each layer gives the correct layerid against the first hit that is attributed to 
 	//the layerCluster id. 
@@ -826,6 +846,7 @@ namespace hgcal_validation
 	rhInfo.rechit_phi.push_back(recHitTools->getPhi(position));
 	rhInfo.rechit_pt.push_back(recHitTools->getPt(position,energy));
 	rhInfo.rechit_energy.push_back(energy);
+	rhInfo.rechit_uncalib_energy.push_back(uncalib_energy);
 	rhInfo.rechit_layer.push_back(lcLayerId);
 	rhInfo.rechit_wafer_u.push_back(wafer.first);
 	rhInfo.rechit_wafer_v.push_back(wafer.second);
@@ -841,7 +862,8 @@ namespace hgcal_validation
 	rhInfo.rechit_flags.push_back(flags);
 	rhInfo.rechit_radius.push_back(radius);
 	rhInfo.rechit_layerclusterid.push_back(rhLayerId);
-	
+	rhInfo.rechit_tracksterid.push_back(trId);
+
 	++rechit_index;
 
       }  // end loop over hits on a LayerCluster
@@ -865,6 +887,7 @@ namespace hgcal_validation
       lcInfo.layerCluster_rechit_phi.push_back(rhInfo.rechit_phi);
       lcInfo.layerCluster_rechit_pt.push_back(rhInfo.rechit_pt);
       lcInfo.layerCluster_rechit_energy.push_back(rhInfo.rechit_energy);
+      lcInfo.layerCluster_rechit_uncalib_energy.push_back(rhInfo.rechit_uncalib_energy);
       lcInfo.layerCluster_rechit_layer.push_back(rhInfo.rechit_layer);
       lcInfo.layerCluster_rechit_wafer_u.push_back(rhInfo.rechit_wafer_u);
       lcInfo.layerCluster_rechit_wafer_v.push_back(rhInfo.rechit_wafer_v);
@@ -880,6 +903,7 @@ namespace hgcal_validation
       lcInfo.layerCluster_rechit_flags.push_back(rhInfo.rechit_flags);
       lcInfo.layerCluster_rechit_radius.push_back(rhInfo.rechit_radius);
       lcInfo.layerCluster_rechit_layerclusterid.push_back(rhInfo.rechit_layerclusterid);
+      lcInfo.layerCluster_rechit_tracksterid.push_back(rhInfo.rechit_tracksterid);
 
 
     }//end of loop over layerClusters
@@ -1315,14 +1339,19 @@ namespace hgcal_validation
   }
 
   void fillTrackstersInfo(trackstersInfo &trInfo,
+			  simClustersInfo &scInfo, 
   			  layerClustersInfo &lcInfo,
-  			  recHitInfo &rhInfo,
+  			  recHitInfo &rhInfo_sc,
+  			  recHitInfo &rhInfo_lc,
   			  const ticl::TracksterCollection& tracksters,
+			  std::vector<SimCluster> const& simClusters,
   			  const reco::CaloClusterCollection& clusters,
   			  const std::vector<TICLSeedingRegion>& ticlSeedingGlobal,
   			  const std::vector<TICLSeedingRegion>& ticlSeedingTrk,
+			  std::unordered_map<DetId, std::vector<const HGCUncalibratedRecHit *>> const& UnCalibHitMap,
   			  std::unordered_map<DetId, const HGCRecHit*> const& hitMap,
   			  std::shared_ptr<hgcal::RecHitTools> recHitTools,
+			  const bool doEdges, 
   			  unsigned int layers){
 
     const auto nTracksters = tracksters.size();
@@ -1372,7 +1401,8 @@ namespace hgcal_validation
 
   	trackster_layers.insert(layerid);
 
-	fillLayerClustersInfo(lcInfo, rhInfo, clusters, lcId, tstId, true, hitMap, recHitTools, layers);
+	fillSimClustersInfo(scInfo, rhInfo_sc, simClusters, hitMap, recHitTools, layers);
+	fillLayerClustersInfo(lcInfo, rhInfo_lc, clusters, lcId, tstId, true, UnCalibHitMap, hitMap, recHitTools, layers);
 
       }  // end of loop through layerClusters
 
@@ -1388,135 +1418,138 @@ namespace hgcal_validation
       trInfo.trackster_id.push_back(tstId);
 
       // Plots on edges
-      unsigned int numedges = 0;
-      std::vector<unsigned int> tmp_trackster_numedges;
-      std::vector<unsigned int> tmp_trackster_edge_layerin;
-      std::vector<unsigned int> tmp_trackster_edge_layerout;
-      std::vector<unsigned int> tmp_trackster_edge_layerin_id;
-      std::vector<unsigned int> tmp_trackster_edge_layerout_id;
-      std::vector<float> tmp_trackster_delta_energy;
-      std::vector<float> tmp_trackster_delta_energy_relative;
-      std::vector<float> tmp_trackster_delta_layer;
-      std::vector<float> tmp_trackster_angle_alpha;
-      std::vector<float> tmp_trackster_angle_alpha_alternative;
-      std::vector<float> tmp_trackster_angle_beta;
-      tmp_trackster_numedges.clear();
-      tmp_trackster_edge_layerin.clear();
-      tmp_trackster_edge_layerout.clear();
-      tmp_trackster_edge_layerin_id.clear();
-      tmp_trackster_edge_layerout_id.clear();
-      tmp_trackster_delta_energy.clear();
-      tmp_trackster_delta_energy_relative.clear();
-      tmp_trackster_delta_layer.clear();
-      tmp_trackster_angle_alpha.clear();
-      tmp_trackster_angle_alpha_alternative.clear();
-      tmp_trackster_angle_beta.clear();
+      if (doEdges){
+	unsigned int numedges = 0;
+	std::vector<unsigned int> tmp_trackster_numedges;
+	std::vector<unsigned int> tmp_trackster_edge_layerin;
+	std::vector<unsigned int> tmp_trackster_edge_layerout;
+	std::vector<unsigned int> tmp_trackster_edge_layerin_id;
+	std::vector<unsigned int> tmp_trackster_edge_layerout_id;
+	std::vector<float> tmp_trackster_delta_energy;
+	std::vector<float> tmp_trackster_delta_energy_relative;
+	std::vector<float> tmp_trackster_delta_layer;
+	std::vector<float> tmp_trackster_angle_alpha;
+	std::vector<float> tmp_trackster_angle_alpha_alternative;
+	std::vector<float> tmp_trackster_angle_beta;
+	tmp_trackster_numedges.clear();
+	tmp_trackster_edge_layerin.clear();
+	tmp_trackster_edge_layerout.clear();
+	tmp_trackster_edge_layerin_id.clear();
+	tmp_trackster_edge_layerout_id.clear();
+	tmp_trackster_delta_energy.clear();
+	tmp_trackster_delta_energy_relative.clear();
+	tmp_trackster_delta_layer.clear();
+	tmp_trackster_angle_alpha.clear();
+	tmp_trackster_angle_alpha_alternative.clear();
+	tmp_trackster_angle_beta.clear();
       
-      for (const auto& edge : tracksters[tstId].edges()) {
-	auto& ic = clusters[edge[0]];
-        auto& oc = clusters[edge[1]];
-        auto const& cl_in = ic.hitsAndFractions()[0].first;
-        auto const& cl_out = oc.hitsAndFractions()[0].first;
-	auto const layer_in =
-	  recHitTools->getLayerWithOffset(cl_in) + layers * ((recHitTools->zside(cl_in) + 1) >> 1) - 1;
-	auto const layer_out = 
-	  recHitTools->getLayerWithOffset(cl_out) + layers * ((recHitTools->zside(cl_out) + 1) >> 1) - 1;
+	for (const auto& edge : tracksters[tstId].edges()) {
+	  auto& ic = clusters[edge[0]];
+	  auto& oc = clusters[edge[1]];
+	  auto const& cl_in = ic.hitsAndFractions()[0].first;
+	  auto const& cl_out = oc.hitsAndFractions()[0].first;
+	  auto const layer_in =
+	    recHitTools->getLayerWithOffset(cl_in) + layers * ((recHitTools->zside(cl_in) + 1) >> 1) - 1;
+	  auto const layer_out = 
+	    recHitTools->getLayerWithOffset(cl_out) + layers * ((recHitTools->zside(cl_out) + 1) >> 1) - 1;
 
-	tmp_trackster_edge_layerin_id.push_back(edge[0]);
-	tmp_trackster_edge_layerout_id.push_back(edge[1]);
-	tmp_trackster_edge_layerin.push_back(layer_in);
-	tmp_trackster_edge_layerout.push_back(layer_out);
+	  tmp_trackster_edge_layerin_id.push_back(edge[0]);
+	  tmp_trackster_edge_layerout_id.push_back(edge[1]);
+	  tmp_trackster_edge_layerin.push_back(layer_in);
+	  tmp_trackster_edge_layerout.push_back(layer_out);
 
-	tmp_trackster_delta_energy.push_back(oc.energy() - ic.energy());
-	tmp_trackster_delta_energy_relative.push_back((oc.energy() - ic.energy()) / ic.energy());
-	tmp_trackster_delta_layer.push_back(layer_out - layer_in);
+	  tmp_trackster_delta_energy.push_back(oc.energy() - ic.energy());
+	  tmp_trackster_delta_energy_relative.push_back((oc.energy() - ic.energy()) / ic.energy());
+	  tmp_trackster_delta_layer.push_back(layer_out - layer_in);
 
-        // Alpha angles
-        const auto& outer_outer_pos = oc.position();
-        const auto& outer_inner_pos = ic.position();
-        const auto& seed = tracksters[tstId].seedIndex();
-        auto seedGlobalPos = math::XYZPoint(
-					    ticlSeedingGlobal[0].origin.x(), ticlSeedingGlobal[0].origin.y(), ticlSeedingGlobal[0].origin.z());
-        auto seedDirectionPos = outer_inner_pos;
-        if (tracksters[tstId].seedID().id() != 0) {
-          // Seed to trackster association is, at present, rather convoluted.
-          for (auto const& s : ticlSeedingTrk) {
-            if (s.index == seed) {
-              seedGlobalPos = math::XYZPoint(s.origin.x(), s.origin.y(), s.origin.z());
-              seedDirectionPos =
-		math::XYZPoint(s.directionAtOrigin.x(), s.directionAtOrigin.y(), s.directionAtOrigin.z());
-              break;
-            }
-          }
-        }
+	  // Alpha angles
+	  const auto& outer_outer_pos = oc.position();
+	  const auto& outer_inner_pos = ic.position();
+	  const auto& seed = tracksters[tstId].seedIndex();
+	  auto seedGlobalPos = math::XYZPoint(
+					      ticlSeedingGlobal[0].origin.x(), ticlSeedingGlobal[0].origin.y(), ticlSeedingGlobal[0].origin.z());
+	  auto seedDirectionPos = outer_inner_pos;
+	  if (tracksters[tstId].seedID().id() != 0) {
+	    // Seed to trackster association is, at present, rather convoluted.
+	    for (auto const& s : ticlSeedingTrk) {
+	      if (s.index == seed) {
+		seedGlobalPos = math::XYZPoint(s.origin.x(), s.origin.y(), s.origin.z());
+		seedDirectionPos =
+		  math::XYZPoint(s.directionAtOrigin.x(), s.directionAtOrigin.y(), s.directionAtOrigin.z());
+		break;
+	      }
+	    }
+	  }
 
-	auto alpha = (outer_inner_pos - seedGlobalPos).Dot(outer_outer_pos - outer_inner_pos) /
-	  sqrt((outer_inner_pos - seedGlobalPos).Mag2() * (outer_outer_pos - outer_inner_pos).Mag2());
-        auto alpha_alternative = (outer_outer_pos - seedGlobalPos).Dot(seedDirectionPos) /
-	  sqrt((outer_outer_pos - seedGlobalPos).Mag2() * seedDirectionPos.Mag2());
+	  auto alpha = (outer_inner_pos - seedGlobalPos).Dot(outer_outer_pos - outer_inner_pos) /
+	    sqrt((outer_inner_pos - seedGlobalPos).Mag2() * (outer_outer_pos - outer_inner_pos).Mag2());
+	  auto alpha_alternative = (outer_outer_pos - seedGlobalPos).Dot(seedDirectionPos) /
+	    sqrt((outer_outer_pos - seedGlobalPos).Mag2() * seedDirectionPos.Mag2());
 	
-	tmp_trackster_angle_alpha.push_back(alpha);
-	tmp_trackster_angle_alpha_alternative.push_back(alpha_alternative);
+	  tmp_trackster_angle_alpha.push_back(alpha);
+	  tmp_trackster_angle_alpha_alternative.push_back(alpha_alternative);
 
-	// Beta angle is usually computed using 2 edges. Another inner loop
-        // is therefore needed.	
-	std::vector<std::array<unsigned int, 2>> innerDoublets;
-        std::vector<std::array<unsigned int, 2>> outerDoublets;
+	  // Beta angle is usually computed using 2 edges. Another inner loop
+	  // is therefore needed.	
+	  std::vector<std::array<unsigned int, 2>> innerDoublets;
+	  std::vector<std::array<unsigned int, 2>> outerDoublets;
 
-        for (const auto& otherEdge : tracksters[tstId].edges()) {
-          if (otherEdge[1] == edge[0]) {
-            innerDoublets.push_back(otherEdge);
-          }
-          if (edge[1] == otherEdge[0]) {
-            outerDoublets.push_back(otherEdge);
-          }
-        } 
+	  for (const auto& otherEdge : tracksters[tstId].edges()) {
+	    if (otherEdge[1] == edge[0]) {
+	      innerDoublets.push_back(otherEdge);
+	    }
+	    if (edge[1] == otherEdge[0]) {
+	      outerDoublets.push_back(otherEdge);
+	    }
+	  } 
 
-	for (const auto& inner : innerDoublets) {
-          const auto& inner_ic = clusters[inner[0]];
-          const auto& inner_inner_pos = inner_ic.position();
-          auto beta = (outer_inner_pos - inner_inner_pos).Dot(outer_outer_pos - inner_inner_pos) /
-	    sqrt((outer_inner_pos - inner_inner_pos).Mag2() * (outer_outer_pos - inner_inner_pos).Mag2());
+	  for (const auto& inner : innerDoublets) {
+	    const auto& inner_ic = clusters[inner[0]];
+	    const auto& inner_inner_pos = inner_ic.position();
+	    auto beta = (outer_inner_pos - inner_inner_pos).Dot(outer_outer_pos - inner_inner_pos) /
+	      sqrt((outer_inner_pos - inner_inner_pos).Mag2() * (outer_outer_pos - inner_inner_pos).Mag2());
 
-	  tmp_trackster_angle_beta.push_back(beta);
-        }
+	    tmp_trackster_angle_beta.push_back(beta);
+	  }
 
-	tmp_trackster_numedges.push_back(numedges);
-	++numedges;
-      } //end of loop through edges
+	  tmp_trackster_numedges.push_back(numedges);
+	  ++numedges;
+	} //end of loop through edges
 
-      trInfo.trackster_numedges.push_back(tmp_trackster_numedges);
-      trInfo.trackster_edge_layerin_id.push_back(tmp_trackster_edge_layerin_id);
-      trInfo.trackster_edge_layerout_id.push_back(tmp_trackster_edge_layerout_id);
-      trInfo.trackster_edge_layerin.push_back(tmp_trackster_edge_layerin);
-      trInfo.trackster_edge_layerout.push_back(tmp_trackster_edge_layerout);
-      trInfo.trackster_delta_energy.push_back(tmp_trackster_delta_energy);
-      trInfo.trackster_delta_energy_relative.push_back(tmp_trackster_delta_energy_relative);
-      trInfo.trackster_delta_layer.push_back(tmp_trackster_delta_layer);
-      trInfo.trackster_angle_alpha.push_back(tmp_trackster_angle_alpha);
-      trInfo.trackster_angle_alpha_alternative.push_back(tmp_trackster_angle_alpha_alternative);
-      trInfo.trackster_angle_beta.push_back(tmp_trackster_angle_beta);
+	trInfo.trackster_numedges.push_back(tmp_trackster_numedges);
+	trInfo.trackster_edge_layerin_id.push_back(tmp_trackster_edge_layerin_id);
+	trInfo.trackster_edge_layerout_id.push_back(tmp_trackster_edge_layerout_id);
+	trInfo.trackster_edge_layerin.push_back(tmp_trackster_edge_layerin);
+	trInfo.trackster_edge_layerout.push_back(tmp_trackster_edge_layerout);
+	trInfo.trackster_delta_energy.push_back(tmp_trackster_delta_energy);
+	trInfo.trackster_delta_energy_relative.push_back(tmp_trackster_delta_energy_relative);
+	trInfo.trackster_delta_layer.push_back(tmp_trackster_delta_layer);
+	trInfo.trackster_angle_alpha.push_back(tmp_trackster_angle_alpha);
+	trInfo.trackster_angle_alpha_alternative.push_back(tmp_trackster_angle_alpha_alternative);
+	trInfo.trackster_angle_beta.push_back(tmp_trackster_angle_beta);
 
-      trInfo.trackster_time.push_back(tracksters[tstId].time());
-      trInfo.trackster_timeError.push_back(tracksters[tstId].timeError());
-      trInfo.trackster_regr_energy.push_back(tracksters[tstId].regressed_energy());
-      trInfo.trackster_raw_energy.push_back(tracksters[tstId].raw_energy());
-      trInfo.trackster_raw_em_energy.push_back(tracksters[tstId].raw_em_energy());
-      trInfo.trackster_raw_pt.push_back(tracksters[tstId].raw_pt());
-      trInfo.trackster_raw_em_pt.push_back(tracksters[tstId].raw_em_pt());
-      const auto& probs = tracksters[tstId].id_probabilities();
-      std::vector<int> sorted_probs_idx(probs.size());
-      std::iota(begin(sorted_probs_idx), end(sorted_probs_idx), 0);
-      std::sort(begin(sorted_probs_idx), end(sorted_probs_idx), [&probs](int i, int j) { return probs[i] > probs[j]; });
+	trInfo.trackster_time.push_back(tracksters[tstId].time());
+	trInfo.trackster_timeError.push_back(tracksters[tstId].timeError());
+	trInfo.trackster_regr_energy.push_back(tracksters[tstId].regressed_energy());
+	trInfo.trackster_raw_energy.push_back(tracksters[tstId].raw_energy());
+	trInfo.trackster_raw_em_energy.push_back(tracksters[tstId].raw_em_energy());
+	trInfo.trackster_raw_pt.push_back(tracksters[tstId].raw_pt());
+	trInfo.trackster_raw_em_pt.push_back(tracksters[tstId].raw_em_pt());
+	const auto& probs = tracksters[tstId].id_probabilities();
+	std::vector<int> sorted_probs_idx(probs.size());
+	std::iota(begin(sorted_probs_idx), end(sorted_probs_idx), 0);
+	std::sort(begin(sorted_probs_idx), end(sorted_probs_idx), [&probs](int i, int j) { return probs[i] > probs[j]; });
 
-      trInfo.trackster_id_prob_1.push_back(sorted_probs_idx[1]);
-      trInfo.trackster_id_prob_2.push_back(sorted_probs_idx[2]);
-      trInfo.trackster_id_prob_3.push_back(sorted_probs_idx[3]);
-      trInfo.trackster_id_prob_4.push_back(sorted_probs_idx[4]);
-      trInfo.trackster_id_prob_5.push_back(sorted_probs_idx[5]);
-      trInfo.trackster_id_prob_6.push_back(sorted_probs_idx[6]);
-      trInfo.trackster_id_prob_7.push_back(sorted_probs_idx[7]);
-      trInfo.trackster_id_prob_8.push_back(sorted_probs_idx[8]);
+	trInfo.trackster_id_prob_1.push_back(sorted_probs_idx[1]);
+	trInfo.trackster_id_prob_2.push_back(sorted_probs_idx[2]);
+	trInfo.trackster_id_prob_3.push_back(sorted_probs_idx[3]);
+	trInfo.trackster_id_prob_4.push_back(sorted_probs_idx[4]);
+	trInfo.trackster_id_prob_5.push_back(sorted_probs_idx[5]);
+	trInfo.trackster_id_prob_6.push_back(sorted_probs_idx[6]);
+	trInfo.trackster_id_prob_7.push_back(sorted_probs_idx[7]);
+	trInfo.trackster_id_prob_8.push_back(sorted_probs_idx[8]);
+
+      }
  
       /* const auto tst_hitsAndFractions = apply_LCMultiplicity(trackster, clusters); */
       /* const auto numberOfHitsInTS = tst_hitsAndFractions.size(); */
