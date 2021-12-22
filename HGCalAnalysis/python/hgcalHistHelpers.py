@@ -76,7 +76,7 @@ def histValues2D(fValues, histDict, tag="hist2D_", title="hist 2D", axunit="a.u.
     return histDict
 
 
-def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", xaxistitle = "", yaxistitle = "", setLogY = False, latexComment="", funcsAndProps=None, verbosityLevel=0, ratioplot = False, systematics = False):
+def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", xaxistitle = "", yaxistitle = "", setLogX = False, setLogY = True, latexComment="", funcsAndProps=None, verbosityLevel=0, ratioplot = False, systematics = False):
     """print/save list of histograms with their properties on one canvas"""
     # supress info messages
     ROOT.gErrorIgnoreLevel = ROOT.kInfo + 1
@@ -92,6 +92,7 @@ def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", xaxistitle =
     if ratioplot:
         canvas = makeRatioPlotCanvas(name = tag)
         canvas.cd(1)
+        if setLogX: ROOT.gPad.SetLogx()
         if setLogY: ROOT.gPad.SetLogy()
     else:
         canvas = ROOT.TCanvas(outDir + tag, outDir + tag, settings.canvas_width, settings.canvas_height-150)
@@ -264,6 +265,7 @@ def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", xaxistitle =
                     ratioHist.Draw('same')
                 icount += 1
   
+    if setLogX: canvas.SetLogx()
     if setLogY: canvas.SetLogy()
     for imgType in imgTypes:
         canvas.SaveAs("{}/{}.{}".format(outDir, tag, imgType))
@@ -831,7 +833,7 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLev
     sumLCene = ddfl.groupby(['EventId']).agg( LCEneSum  = ('energy','sum'))
     #print(sumLCene.head())
     #print(sumLCene[['LCEneSum']].to_numpy())
-    theEgen = np.full(len(sumLCene[['LCEneSum']].to_numpy().flatten()),GenEnergy) #Hardcoded yes
+    theEgen = np.full(len(sumLCene[['LCEneSum']].to_numpy().flatten()),GenEnergy) 
     sumLCeneOverEgen = sumLCene[['LCEneSum']].to_numpy().flatten() / theEgen
     print(sumLCeneOverEgen,sumLCene[['LCEneSum']],theEgen)
 
@@ -845,7 +847,17 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLev
     LCeneOverLCsize = ddfl[['energy']].to_numpy() / ddfl[['nhitAll']].to_numpy()
     LCeneOverLCsize = LCeneOverLCsize.flatten()
     histDict_LCeneOverLCsize = histValue1D(LCeneOverLCsize, histDict_LCeneOverLCsize, tag = "LCeneOverLCsize", title = "LC energy over LC size",   axunit = "Average Cell Energy (GeV)", binsBoundariesX = [200, 0, 2], ayunit = "#Events/0.01 GeV", verbosityLevel=verbosityLevel)
+    #Plus a zoomed version
+    histDict_LCeneOverLCsize = histValue1D(LCeneOverLCsize, histDict_LCeneOverLCsize, tag = "LCeneOverLCsize_Zoomed", title = "LC energy over LC size",   axunit = "Average Cell Energy (GeV)", binsBoundariesX = [20, 0, 0.2], ayunit = "#Events/0.01 GeV", verbosityLevel=verbosityLevel)
     histPrintSaveAll(histDict_LCeneOverLCsize, outDir, output, tree, verbosityLevel, setLogY = True)
+
+    #-------------------------------------------------------------------------
+    #LC size
+    histDict_LCsize = {}
+    LCsize = ddfl[['nhitAll']].to_numpy()
+    LCsize = LCsize.flatten()
+    histDict_LCsize = histValue1D(LCsize, histDict_LCsize, tag = "LCsize", title = "LC size",   axunit = "LC Size", binsBoundariesX = [50, 0, 50], ayunit = "#Events x #LCs", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_LCsize, outDir, output, tree, verbosityLevel, setLogY = True)
 
     #-------------------------------------------------------------------------
     #LC energy over LC size Per size: So, average cell energy per size. 
@@ -861,6 +873,7 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLev
         thetitle = "LC energy over LC size from LCs of size %s" %(i+1)
         if i == 4: thetitle = "LC energy over LC size from LCs of size >= %s" %(i+1)
         histDict_LCeneOverLCsizePerSize[i] = histValue1D(obj, histDict_LCeneOverLCsizePerSize[i], tag = "LCeneOverLCsizeForLCSize%s"%(i+1), title = thetitle,  axunit = "Average Cell Energy (GeV)", binsBoundariesX = [200, 0, 2], ayunit = "#Events/0.01 GeV ", verbosityLevel=verbosityLevel)
+        histDict_LCeneOverLCsizePerSize[i] = histValue1D(obj, histDict_LCeneOverLCsizePerSize[i], tag = "LCeneOverLCsizeForLCSize%s_Zoomed"%(i+1), title = thetitle,  axunit = "Average Cell Energy (GeV)", binsBoundariesX = [20, 0, 0.2], ayunit = "#Events/0.01 GeV ", verbosityLevel=verbosityLevel)
         print(histDict_LCeneOverLCsizePerSize[i])
         histPrintSaveAll(histDict_LCeneOverLCsizePerSize[i], outDir, output, tree, verbosityLevel)
 
@@ -869,6 +882,11 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLev
     # plot these histograms on top of each other 
     histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "LCeneOverLCsizeNormForLCVariousSizes", xaxistitle = "Average Cell Energy (GeV)", yaxistitle = "a.u./0.01 GeV ", setLogY = True, latexComment = "", funcsAndProps = None, ratioplot = True)
 
+    # make a zoomed version
+    histsAndProps = {histDict_LCeneOverLCsizePerSize[0]['LCeneOverLCsizeForLCSize1_Zoomed']:{"leg":"LC size == 1","color":132}, histDict_LCeneOverLCsizePerSize[1]['LCeneOverLCsizeForLCSize2_Zoomed']:{"leg":"LC size == 2","color":122}, histDict_LCeneOverLCsizePerSize[2]['LCeneOverLCsizeForLCSize3_Zoomed']:{"leg":"LC size == 3","color":125}, histDict_LCeneOverLCsizePerSize[3]['LCeneOverLCsizeForLCSize4_Zoomed']:{"leg":"LC size == 4","color":131}, histDict_LCeneOverLCsizePerSize[4]['LCeneOverLCsizeForLCSize5_Zoomed']:{"leg":"LC size >= 5","color":129} }
+    histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "LCeneOverLCsizeNormForLCVariousSizes_Zoomed", xaxistitle = "Average Cell Energy (GeV)", yaxistitle = "a.u./0.01 GeV ", setLogY = True, latexComment = "", funcsAndProps = None, ratioplot = True)
+
+    
     #-------------------------------------------------------------------------
     #LC energy over LC size Per size vs Layer: So, average cell energy per size vs Layer. 
     histDict_LCeneOverLCsizePerSizeVsLayer = {}
@@ -1089,7 +1107,7 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLev
     for i, obj in enumerate([cellEnSum_LC_Size1,cellEnSum_LC_Size2,cellEnSum_LC_Size3,cellEnSum_LC_Size4,cellEnSum_LC_Sizege5]):
         histDict[i] = {}
         thetitle = "Cells Energy Sum from LCs of size %s" %(i+1)
-        if i == 4 or i == 1:
+        if i == 4:
             thetitle = "Cells Energy Sum in MIPs from LCs of size >= %s" %(i+1)
             histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergySumInMIPsFromUncalibForLCSize%s"%(i+1) , title = thetitle,   axunit = "Cells Energy Sum (MIPs)", binsBoundariesX = [200, 0, 10000], ayunit = "#Events/50 MIP", verbosityLevel=verbosityLevel)
         else: 
@@ -1181,13 +1199,56 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLev
         thetitle = "Cells Energy from LCs of size %s" %(i+1)
         if i == 4: thetitle = "Cells Energy from LCs of size >= %s" %(i+1)
         histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergyForLCSize%s"%(i+1), title = thetitle,   axunit = "Cells Energy (GeV)", binsBoundariesX = [200, 0, 2], ayunit = "#Events/0.01 GeV ", verbosityLevel=verbosityLevel)
+        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergyForLCSize%s_Zoomed"%(i+1), title = thetitle,   axunit = "Cells Energy (GeV)", binsBoundariesX = [20, 0, 0.2], ayunit = "#Events/0.01 GeV ", verbosityLevel=verbosityLevel)
         print(histDict[i])
-        histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
+        histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel, setLogY = True)
 
     histsAndProps = {histDict[0]['CellsEnergyForLCSize1']:{"leg":"LC size == 1","color":132}, histDict[1]['CellsEnergyForLCSize2']:{"leg":"LC size == 2","color":122}, histDict[2]['CellsEnergyForLCSize3']:{"leg":"LC size == 3","color":125}, histDict[3]['CellsEnergyForLCSize4']:{"leg":"LC size == 4","color":131}, histDict[4]['CellsEnergyForLCSize5']:{"leg":"LC size >= 5","color":123}, histDict_LCeneOverLCsize["LCeneOverLCsize"]:{"leg":"Average cell energy","color":129} }
     
     # plot these histograms on top of each other 
     histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyNormForLCVariousSizes", xaxistitle = "Cells Energy (GeV)", yaxistitle = "a.u./0.01 GeV ", setLogY = True, latexComment = "", funcsAndProps = None)
+
+    # make a version with logX
+    histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyNormForLCVariousSizes_LogX", xaxistitle = "Cells Energy (GeV)", yaxistitle = "a.u./0.01 GeV ", setLogX = True, setLogY = True, latexComment = "", funcsAndProps = None)
+
+    # make a zoomed version
+    histsAndProps = {histDict[0]['CellsEnergyForLCSize1_Zoomed']:{"leg":"LC size == 1","color":132}, histDict[1]['CellsEnergyForLCSize2_Zoomed']:{"leg":"LC size == 2","color":122}, histDict[2]['CellsEnergyForLCSize3_Zoomed']:{"leg":"LC size == 3","color":125}, histDict[3]['CellsEnergyForLCSize4_Zoomed']:{"leg":"LC size == 4","color":131}, histDict[4]['CellsEnergyForLCSize5_Zoomed']:{"leg":"LC size >= 5","color":123}, histDict_LCeneOverLCsize["LCeneOverLCsize_Zoomed"]:{"leg":"Average cell energy","color":129} }
+    histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyNormForLCVariousSizes_Zoomed", xaxistitle = "Cells Energy (GeV)", yaxistitle = "a.u./0.01 GeV ", latexComment = "", funcsAndProps = None)
+
+    #-------------------------------------------------------------------------
+    #Cells energy in MIPs belonging to LCs of specific sizes.
+    df_mips = df[ (df['id'] >= 0)]
+    cellsFromLCEnePerSize1 = df_mips[ (df_mips['nhitAll'] == 1)][['rechit_uncalib_energy']].to_numpy().flatten()
+    cellsFromLCEnePerSize2 = df_mips[ (df_mips['nhitAll'] == 2)][['rechit_uncalib_energy']].to_numpy().flatten()
+    cellsFromLCEnePerSize3 = df_mips[ (df_mips['nhitAll'] == 3)][['rechit_uncalib_energy']].to_numpy().flatten()
+    cellsFromLCEnePerSize4 = df_mips[ (df_mips['nhitAll'] == 4)][['rechit_uncalib_energy']].to_numpy().flatten()
+    cellsFromLCEnePerSizege5 = df_mips[ (df_mips['nhitAll'] >= 5)][['rechit_uncalib_energy']].to_numpy().flatten()
+    #Now, for the average cell energy in MIPs, we need LC energy in MIPs
+    LCEneInMIPs = df_mips.groupby(['EventId','id','nhitAll']).agg( LCEneInMIPsFromSum  = ('rechit_uncalib_energy','sum'))
+    print(LCEneInMIPs)
+    print(LCEneInMIPs.index.get_level_values('nhitAll'))
+    LCeneOverLCsizeinMIPs = LCEneInMIPs[['LCEneInMIPsFromSum']].to_numpy().flatten() / LCEneInMIPs.index.get_level_values('nhitAll').to_numpy().flatten()
+
+    histDict_LCeneOverLCsizeinMIPs = {}
+    histDict_LCeneOverLCsizeinMIPs = histValue1D(LCeneOverLCsizeinMIPs, histDict_LCeneOverLCsizeinMIPs, tag = "LCeneOverLCsizeinMIPs", title = "LC energy in MIPs over LC size",   axunit = "Average Cell Energy (MIPs)", binsBoundariesX = [100, 0, 100], ayunit = "#Events/1 MIPs", verbosityLevel=verbosityLevel)
+
+    #print(cellsFromLCEnePerSize1,cellsFromLCEnePerSize2,cellsFromLCEnePerSize3,cellsFromLCEnePerSize4,cellsFromLCEnePerSizege5)
+
+    for i, obj in enumerate([cellsFromLCEnePerSize1,cellsFromLCEnePerSize2,cellsFromLCEnePerSize3,cellsFromLCEnePerSize4,cellsFromLCEnePerSizege5]):
+        histDict[i] = {}
+        thetitle = "Cells Energy in MIPs from LCs of size %s" %(i+1)
+        if i == 4: thetitle = "Cells Energy in MIPs from LCs of size >= %s" %(i+1)
+        histDict[i] = histValue1D(obj, histDict[i], tag = "CellsEnergyinMIPsForLCSize%s"%(i+1), title = thetitle,   axunit = "Cells Energy (MIPs)", binsBoundariesX = [100, 0, 100], ayunit = "#Events/1 MIP ", verbosityLevel=verbosityLevel)
+        print(histDict[i])
+        histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel, setLogY = True)
+
+    histsAndProps = {histDict[0]['CellsEnergyinMIPsForLCSize1']:{"leg":"LC size == 1","color":132}, histDict[1]['CellsEnergyinMIPsForLCSize2']:{"leg":"LC size == 2","color":122}, histDict[2]['CellsEnergyinMIPsForLCSize3']:{"leg":"LC size == 3","color":125}, histDict[3]['CellsEnergyinMIPsForLCSize4']:{"leg":"LC size == 4","color":131}, histDict[4]['CellsEnergyinMIPsForLCSize5']:{"leg":"LC size >= 5","color":123}, histDict_LCeneOverLCsizeinMIPs["LCeneOverLCsizeinMIPs"]:{"leg":"Average cell energy","color":129} }
+    
+    # plot these histograms on top of each other 
+    histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyinMIPsNormForLCVariousSizes", xaxistitle = "Cells Energy (MIPs)", yaxistitle = "a.u./1 MIP ", setLogY = True, latexComment = "", funcsAndProps = None)
+
+    # make a version with logX
+    histsPrintSaveSameCanvas(histsAndProps, outDir, tag = "CellsEnergyinMIPsNormForLCVariousSizes_LogX", xaxistitle = "Cells Energy (MIPs)", yaxistitle = "a.u./1 MIP ", setLogX = True, setLogY = True, latexComment = "", funcsAndProps = None)
 
     #histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel)
 

@@ -73,5 +73,5 @@ premix_stage2.toModify(HGCalAnalysis,
 from Configuration.Eras.Modifier_phase2_hgcalV10_cff import phase2_hgcalV10
 phase2_hgcalV10.toModify(HGCalAnalysis, totallayers_to_monitor = cms.int32(50))
 
-from Configuration.Eras.Modifier_phase2_hgcalV12_cff import phase2_hgcalV12
-phase2_hgcalV12.toModify(HGCalAnalysis, totallayers_to_monitor = cms.int32(47))
+#from Configuration.Eras.Modifier_phase2_hgcalV12_cff import phase2_hgcalV12
+#phase2_hgcalV12.toModify(HGCalAnalysis, totallayers_to_monitor = cms.int32(47))
