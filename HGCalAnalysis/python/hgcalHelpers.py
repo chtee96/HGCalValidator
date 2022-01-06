@@ -20,6 +20,7 @@ def analyzeSimClusters(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
     for event in ntuple:
         currentevent = event.entry()
         if event.entry() >= maxEvents and maxEvents != -1 : break
+        #if currentevent % 100 != 0 : continue
         if (verbosityLevel>=1 and currentevent % 1 == 0): print( "\nCurrent event: ", currentevent)
 
         simClusters = event.simClusters()
@@ -58,6 +59,10 @@ def analyzeSimClusters(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
                 out["rechit_pt"].append(rh)
             for rh in simClus.rechit_energy():
                 out["rechit_energy"].append(rh)
+            for rh in simClus.rechit_recostructable_energy():
+                out["rechit_recostructable_energy"].append(rh)
+            for rh in simClus.rechit_SoN():
+                out["rechit_SoN"].append(rh)
             for rh in simClus.rechit_x():
                 out["rechit_x"].append(rh)
             for rh in simClus.rechit_y():
@@ -227,20 +232,21 @@ def analyzeLayerClusters(ntuple,tree,maxEvents,outDir,output,GenEnergy,verbosity
 
     return df
 
-def recHitCalibration(df,tree,maxEvents,outDir,output,GenEnergy,verbosityLevel): 
+def recHitCalibration(df,tree,maxEvents,outDir,output,GenEnergy,ecut,verbosityLevel): 
 
-    df_m = df.Filter("rechit_simclusterid >= 0", "RecHit matched with simHit from simcluster ")
+    df_m = df.Filter("rechit_simclusterid >= 0 && rechit_SoN >= 3", "RecHit matched with simHit from simcluster ")
     df_u = df.Filter("rechit_simclusterid < 0", "Unmatched recHit ")
     #Add a column with the rechit_energy x fraction
     df_m = df_m.Define('recHitEneXFraction', 'rechit_energy * sClusHitsFractions')
     #Add a column with the generated energy
-    df_m = df_m.Define('theEgen', 'float(GenEnergy)') 
+    df_m = df_m.Define('theEgen', 'float(%s)' %(GenEnergy) ) 
     #Add a column with the Ereco/Egen
-    df_m = df_m.Define('recHitEneXFractionOvertheEgen', 'recHitEneXFraction / theEgen')
+    #df_m = df_m.Define('recHitEneXFractionOvertheEgen', 'recHitEneXFraction / theEgen')
+    df_m = df_m.Define('recHitEneXFractionOvertheEgen', 'rechit_recostructable_energy / theEgen')
     #Add a colun with the radious
     df_m = df_m.Define('R', 'sqrt(rechit_x*rechit_x + rechit_y*rechit_y)')
     #Some columns for the unmatched case now
-    df_u = df_u.Define('theEgen', 'float(GenEnergy)') 
+    df_u = df_u.Define('theEgen', 'float(%s)' %(GenEnergy) ) 
     df_u = df_u.Define('R', 'sqrt(rechit_x*rechit_x + rechit_y*rechit_y)') 
     df_u = df_u.Define('recHitEneOvertheEgen', 'rechit_energy / theEgen') 
     #df.Display().Print()
@@ -252,13 +258,36 @@ def recHitCalibration(df,tree,maxEvents,outDir,output,GenEnergy,verbosityLevel):
     print(the_df_m.head())
 
     #Make the plots
-    recHitCalibrationPlots(the_df_m,the_df_u,tree,maxEvents,outDir,output,GenEnergy,verbosityLevel)
+    recHitCalibrationPlots(the_df_m,the_df_u,tree,maxEvents,outDir,output,GenEnergy,ecut,verbosityLevel)
 
     #We want the sum of the above column per Event per hit thickness and per detector 
     recHitEneXFractionSumPerThick = the_df_m.groupby(['EventId','sClusHitsThick','sClusHitsDet']).agg( recHitEneXFractionSum  = ('recHitEneXFraction','sum'))
     print(recHitEneXFractionSumPerThick)
+    #recHitEneXFractionSumPerThick.columns = recHitEneXFractionSumPerThick.columns.get_level_values("")
+    #recHitEneXFractionSumPerThick = pd.DataFrame(recHitEneXFractionSumPerThick.to_records(), index=recHitEneXFractionSumPerThick.index).drop(['sClusHitsThick','sClusHitsDet'], axis=1)
+    recHitEneXFractionSumPerThick = pd.DataFrame(recHitEneXFractionSumPerThick.to_records())
+    recHitEneXFractionSumPerThick = recHitEneXFractionSumPerThick.set_index('EventId')
+    print(recHitEneXFractionSumPerThick)
+    listOfSeries = [pd.Series({'sClusHitsThick' : 120, 'sClusHitsDet' : 8, 'recHitEneXFractionSum': 0.0}, index=recHitEneXFractionSumPerThick.columns ) ,
+                    pd.Series({'sClusHitsThick' : 200, 'sClusHitsDet' : 8, 'recHitEneXFractionSum': 0.0}, index=recHitEneXFractionSumPerThick.columns ) ,
+                    pd.Series({'sClusHitsThick' : 300, 'sClusHitsDet' : 8, 'recHitEneXFractionSum': 0.0}, index=recHitEneXFractionSumPerThick.columns ) ,
+                    pd.Series({'sClusHitsThick' : 120, 'sClusHitsDet' : 9, 'recHitEneXFractionSum': 0.0}, index=recHitEneXFractionSumPerThick.columns ) ,
+                    pd.Series({'sClusHitsThick' : 200, 'sClusHitsDet' : 9, 'recHitEneXFractionSum': 0.0}, index=recHitEneXFractionSumPerThick.columns ) ,
+                    pd.Series({'sClusHitsThick' : 300, 'sClusHitsDet' : 9, 'recHitEneXFractionSum': 0.0}, index=recHitEneXFractionSumPerThick.columns ) ,
+                    pd.Series({'sClusHitsThick' : 100000, 'sClusHitsDet' : 10, 'recHitEneXFractionSum': 0.0}, index=recHitEneXFractionSumPerThick.columns )]
+    #listOfSeries = [pd.Series({'sClusHitsThick' : 120, 'sClusHitsDet' : 8, 'recHitEneXFractionSum': 0.0}, index=recHitEneXFractionSumPerThick.columns ) ]
+    def add_rows(x): return x.append(listOfSeries)
+    recHitEneXFractionSumPerThick = recHitEneXFractionSumPerThick.groupby('EventId')
+    recHitEneXFractionSumPerThick = recHitEneXFractionSumPerThick.apply(add_rows)#.reset_index(drop=True)
+    #recHitEneXFractionSumPerThick.drop('EventId', axis=1)
+    #recHitEneXFractionSumPerThick.columns = recHitEneXFractionSumPerThick.columns.to_flat_index().str.join('_')
+    print(recHitEneXFractionSumPerThick)
+    recHitEneXFractionSumPerThick = recHitEneXFractionSumPerThick.groupby(['EventId','sClusHitsThick','sClusHitsDet']).agg( recHitEneXFractionSum  = ('recHitEneXFractionSum','sum'))
+    print(recHitEneXFractionSumPerThick)
+
     #The object above has a multiindex so let's save the quantities we want
-    #The conventions are: Tracker = 1, Muon = 2,Ecal = 3,Hcal = 4,Calo = 5,Forward = 6,VeryForward = 7,HGCalEE = 8,HGCalHSi = 9,HGCalHSc = 10,HGCalTrigger = 11 
+    #The conventions are: Tracker = 1, Muon = 2,Ecal = 3,Hcal = 4,Calo = 5,Forward = 6,VeryForward = 7,HGCalEE = 8,HGCalHSi = 9,HGCalHSc = 10,HGCalTrigger = 11
+    '''
     rHxEnFrSum_CE_E_120um = np.ma.masked_equal(recHitEneXFractionSumPerThick.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['recHitEneXFractionSum']].to_numpy().flatten(),0)
     rHxEnFrSum_CE_E_200um = np.ma.masked_equal(recHitEneXFractionSumPerThick.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['recHitEneXFractionSum']].to_numpy().flatten(),0)
     rHxEnFrSum_CE_E_300um =np.ma.masked_equal( recHitEneXFractionSumPerThick.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['recHitEneXFractionSum']].to_numpy().flatten(),0)
@@ -268,24 +297,53 @@ def recHitCalibration(df,tree,maxEvents,outDir,output,GenEnergy,verbosityLevel):
     rHxEnFrSum_CE_H_Scint = np.ma.masked_equal(recHitEneXFractionSumPerThick.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['recHitEneXFractionSum']].to_numpy().flatten(),0)
     #print(rHxEnFrSum_CE_E_120um,rHxEnFrSum_CE_E_200um,rHxEnFrSum_CE_E_300um,rHxEnFrSum_CE_H_120um,rHxEnFrSum_CE_H_200um,rHxEnFrSum_CE_H_300um,rHxEnFrSum_CE_H_Scint)
     y = np.full( max(len(rHxEnFrSum_CE_E_120um),len(rHxEnFrSum_CE_E_200um),len(rHxEnFrSum_CE_E_300um),len(rHxEnFrSum_CE_H_120um),len(rHxEnFrSum_CE_H_200um),len(rHxEnFrSum_CE_H_300um),len(rHxEnFrSum_CE_H_Scint)) , GenEnergy)
-
+    '''
+    rHxEnFrSum_CE_E_120um = recHitEneXFractionSumPerThick.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['recHitEneXFractionSum']].to_numpy().flatten()
+    rHxEnFrSum_CE_E_200um = recHitEneXFractionSumPerThick.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['recHitEneXFractionSum']].to_numpy().flatten()
+    rHxEnFrSum_CE_E_300um = recHitEneXFractionSumPerThick.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['recHitEneXFractionSum']].to_numpy().flatten()
+    rHxEnFrSum_CE_H_120um = recHitEneXFractionSumPerThick.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['recHitEneXFractionSum']].to_numpy().flatten()
+    rHxEnFrSum_CE_H_200um = recHitEneXFractionSumPerThick.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['recHitEneXFractionSum']].to_numpy().flatten()
+    rHxEnFrSum_CE_H_300um = recHitEneXFractionSumPerThick.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['recHitEneXFractionSum']].to_numpy().flatten()
+    rHxEnFrSum_CE_H_Scint = recHitEneXFractionSumPerThick.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['recHitEneXFractionSum']].to_numpy().flatten()
+    print("rHxEnFrSum_CE_E_120um", rHxEnFrSum_CE_E_120um)
+    print("rHxEnFrSum_CE_E_200um", rHxEnFrSum_CE_E_200um)
+    print("rHxEnFrSum_CE_E_300um", rHxEnFrSum_CE_E_300um)
+    print("rHxEnFrSum_CE_H_120um", rHxEnFrSum_CE_H_120um)
+    print("rHxEnFrSum_CE_H_200um", rHxEnFrSum_CE_H_200um)
+    print("rHxEnFrSum_CE_H_300um", rHxEnFrSum_CE_H_300um)
+    print("rHxEnFrSum_CE_H_Scint", rHxEnFrSum_CE_H_Scint)
+    #y = np.full( min(len(rHxEnFrSum_CE_E_120um),len(rHxEnFrSum_CE_E_200um),len(rHxEnFrSum_CE_E_300um),len(rHxEnFrSum_CE_H_120um),len(rHxEnFrSum_CE_H_200um),len(rHxEnFrSum_CE_H_300um),len(rHxEnFrSum_CE_H_Scint)) , GenEnergy)
+    y = np.full( min(len(rHxEnFrSum_CE_E_120um),len(rHxEnFrSum_CE_E_200um),len(rHxEnFrSum_CE_E_300um),len(rHxEnFrSum_CE_H_120um),len(rHxEnFrSum_CE_H_200um),len(rHxEnFrSum_CE_H_300um)) , GenEnergy)
+    #y = np.full( min(len(rHxEnFrSum_CE_H_200um), len(rHxEnFrSum_CE_H_300um)), GenEnergy)
+    #y = np.full( min(len(rHxEnFrSum_CE_H_120um), len(rHxEnFrSum_CE_H_200um), len(rHxEnFrSum_CE_H_300um)), GenEnergy)
+    #y = np.full( min(len(rHxEnFrSum_CE_E_120um), len(rHxEnFrSum_CE_E_200um), len(rHxEnFrSum_CE_E_300um)), GenEnergy)
+    #y = np.full( len(rHxEnFrSum_CE_H_Scint), GenEnergy)
+    #for i in (rHxEnFrSum_CE_E_120um,rHxEnFrSum_CE_E_200um,rHxEnFrSum_CE_E_300um,rHxEnFrSum_CE_H_120um,rHxEnFrSum_CE_H_200um,rHxEnFrSum_CE_H_300um,rHxEnFrSum_CE_H_Scint): print(i,"len",len(i))
     #Will create the dataframe this way since the length of the columns is different
     df_reg = pd.DataFrame({
-        'rHxEnFrSum_CE_E_120um': pd.Series(rHxEnFrSum_CE_E_120um), 
-        'rHxEnFrSum_CE_E_200um': pd.Series(rHxEnFrSum_CE_E_200um), 
-        'rHxEnFrSum_CE_E_300um': pd.Series(rHxEnFrSum_CE_E_300um), 
-        'rHxEnFrSum_CE_H_120um': pd.Series(rHxEnFrSum_CE_H_120um), 
-        'rHxEnFrSum_CE_H_200um': pd.Series(rHxEnFrSum_CE_H_200um), 
-        'rHxEnFrSum_CE_H_300um': pd.Series(rHxEnFrSum_CE_H_300um), 
-        'rHxEnFrSum_CE_H_Scint': pd.Series(rHxEnFrSum_CE_H_Scint), 
+        'rHxEnFrSum_CE_E_120um': pd.Series(rHxEnFrSum_CE_E_120um[:len(y)]), 
+        'rHxEnFrSum_CE_E_200um': pd.Series(rHxEnFrSum_CE_E_200um[:len(y)]), 
+        'rHxEnFrSum_CE_E_300um': pd.Series(rHxEnFrSum_CE_E_300um[:len(y)]), 
+        'rHxEnFrSum_CE_H_120um': pd.Series(rHxEnFrSum_CE_H_120um[:len(y)]), 
+        'rHxEnFrSum_CE_H_200um': pd.Series(rHxEnFrSum_CE_H_200um[:len(y)]), 
+        'rHxEnFrSum_CE_H_300um': pd.Series(rHxEnFrSum_CE_H_300um[:len(y)]), 
+        'rHxEnFrSum_CE_H_Scint': pd.Series(rHxEnFrSum_CE_H_Scint[:len(y)]), 
         'theEgen': y})
-    df_reg.fillna(0,inplace=True)
+    #print(df_reg)
+    #df_reg.dropna()
+    #print(df_reg)
+    #df_reg.to_csv('df_regression.csv', index=False)
+    #df_reg = df_reg.fillna(0,inplace=True)
     
-    X = df_reg[['rHxEnFrSum_CE_E_120um','rHxEnFrSum_CE_E_200um','rHxEnFrSum_CE_E_300um','rHxEnFrSum_CE_H_120um','rHxEnFrSum_CE_H_200um','rHxEnFrSum_CE_H_300um','rHxEnFrSum_CE_H_Scint','theEgen']]
-    #X = df_reg[['rHxEnFrSum_CE_E_120um','rHxEnFrSum_CE_E_200um','rHxEnFrSum_CE_E_300um','rHxEnFrSum_CE_H_120um','rHxEnFrSum_CE_H_200um','rHxEnFrSum_CE_H_300um','theEgen']]
+    
+    #X = df_reg[['rHxEnFrSum_CE_E_120um','rHxEnFrSum_CE_E_200um','rHxEnFrSum_CE_E_300um','rHxEnFrSum_CE_H_120um','rHxEnFrSum_CE_H_200um','rHxEnFrSum_CE_H_300um','rHxEnFrSum_CE_H_Scint']]
+    X = df_reg[['rHxEnFrSum_CE_E_120um','rHxEnFrSum_CE_E_200um','rHxEnFrSum_CE_E_300um','rHxEnFrSum_CE_H_120um','rHxEnFrSum_CE_H_200um','rHxEnFrSum_CE_H_300um']]
+    #X = df_reg[['rHxEnFrSum_CE_H_120um','rHxEnFrSum_CE_H_200um','rHxEnFrSum_CE_H_300um']]
+    #X = df_reg[['rHxEnFrSum_CE_E_120um','rHxEnFrSum_CE_E_200um','rHxEnFrSum_CE_E_300um']]
+    #X = df_reg[['rHxEnFrSum_CE_H_Scint']]
     y = df_reg[['theEgen']]
  
-    ols = sm.OLS(y,X)
+    ols = sm.OLS(y,X,missing='drop')
     results = ols.fit()
     print(results.summary())
     
@@ -428,7 +486,7 @@ def analyzeTracksters(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
         LC_idtoZ = pd.Series(dflcur.layerCluster_z.values,index=dflcur.layerCluster_id).to_dict()
 
         #print(len(LC_idtoX), len(LC_idtoY), len(LC_idtoZ))
-
+        
         for trstIndex, trst in enumerate(tracksters):
             #print(trstIndex)
             for edge in trst.numedges():
@@ -492,7 +550,7 @@ def analyzeTracksters(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
             #beta angle has a different number of entries and will be dealt with differently    
             #for angle_beta in trst.angle_beta():
                 #out["trackster_angle_beta"].append(angle_beta)
-
+        
     #print(layer_in)
     #print(dfl[ (dfl['layerCluster_id'] == layer_in) & (dfl['layerCluster_trackster_id'] == trst.id())])
     #ddfl = dfl[ dfl['layerCluster_id'] == layer_in]

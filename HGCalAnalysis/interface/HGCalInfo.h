@@ -188,6 +188,8 @@ namespace hgcal_validation
     std::vector<float> rechit_phi;
     std::vector<float> rechit_pt;
     std::vector<float> rechit_energy;
+    std::vector<float> rechit_recostructable_energy;
+    std::vector<float> rechit_SoN;
     std::vector<float> rechit_uncalib_energy;
     std::vector<float> rechit_x;
     std::vector<float> rechit_y;
@@ -215,6 +217,8 @@ namespace hgcal_validation
     rhInfo.rechit_phi.clear();
     rhInfo.rechit_pt.clear();
     rhInfo.rechit_energy.clear();
+    rhInfo.rechit_recostructable_energy.clear();
+    rhInfo.rechit_SoN.clear();
     rhInfo.rechit_uncalib_energy.clear();
     rhInfo.rechit_x.clear();
     rhInfo.rechit_y.clear();
@@ -240,6 +244,8 @@ namespace hgcal_validation
     fTree->Branch("rechit_phi", &rhInfo.rechit_phi);
     fTree->Branch("rechit_pt", &rhInfo.rechit_pt);
     fTree->Branch("rechit_energy", &rhInfo.rechit_energy);
+    fTree->Branch("rechit_recostructable_energy", &rhInfo.rechit_recostructable_energy);
+    fTree->Branch("rechit_SoN", &rhInfo.rechit_SoN);
     fTree->Branch("rechit_uncalib_energy", &rhInfo.rechit_uncalib_energy);
     fTree->Branch("rechit_x", &rhInfo.rechit_x);
     fTree->Branch("rechit_y", &rhInfo.rechit_y);
@@ -336,6 +342,8 @@ namespace hgcal_validation
     std::vector<std::vector<float>> simcluster_rechit_phi;
     std::vector<std::vector<float>> simcluster_rechit_pt;
     std::vector<std::vector<float>> simcluster_rechit_energy;
+    std::vector<std::vector<float>> simcluster_rechit_recostructable_energy;
+    std::vector<std::vector<float>> simcluster_rechit_SoN;
     std::vector<std::vector<float>> simcluster_rechit_x;
     std::vector<std::vector<float>> simcluster_rechit_y;
     std::vector<std::vector<float>> simcluster_rechit_z;
@@ -381,6 +389,8 @@ namespace hgcal_validation
     scInfo.simcluster_rechit_phi.clear();
     scInfo.simcluster_rechit_pt.clear();
     scInfo.simcluster_rechit_energy.clear();
+    scInfo.simcluster_rechit_recostructable_energy.clear();
+    scInfo.simcluster_rechit_SoN.clear();
     scInfo.simcluster_rechit_x.clear();
     scInfo.simcluster_rechit_y.clear();
     scInfo.simcluster_rechit_z.clear();
@@ -390,7 +400,7 @@ namespace hgcal_validation
 
   }
 
-  void createSimClustersBranches(TTree *fTree, simClustersInfo &scInfo, recHitInfo &rhInfo) {
+  void createSimClustersBranches(TTree *fTree, simClustersInfo &scInfo) {
     fTree->Branch("simcluster_pdgId",&scInfo.simcluster_pdgId);
     fTree->Branch("simcluster_eventId",&scInfo.simcluster_eventId);
     fTree->Branch("simcluster_id",&scInfo.simcluster_id);
@@ -426,6 +436,8 @@ namespace hgcal_validation
     fTree->Branch("simcluster_rechit_phi", &scInfo.simcluster_rechit_phi);
     fTree->Branch("simcluster_rechit_pt", &scInfo.simcluster_rechit_pt);
     fTree->Branch("simcluster_rechit_energy", &scInfo.simcluster_rechit_energy);
+    fTree->Branch("simcluster_rechit_recostructable_energy", &scInfo.simcluster_rechit_recostructable_energy);
+    fTree->Branch("simcluster_rechit_SoN", &scInfo.simcluster_rechit_SoN);
     fTree->Branch("simcluster_rechit_x", &scInfo.simcluster_rechit_x);
     fTree->Branch("simcluster_rechit_y", &scInfo.simcluster_rechit_y);
     fTree->Branch("simcluster_rechit_z", &scInfo.simcluster_rechit_z);
@@ -484,7 +496,7 @@ namespace hgcal_validation
 
 	//The layer the cluster belongs to. As mentioned in the mapping above, it takes into account -z and +z.
 	int layerid =
-          recHitTools->getLayerWithOffset(sh_detid) + layers * ((recHitTools->zside(sh_detid) + 1) >> 1) - 1;
+	  recHitTools->getLayerWithOffset(sh_detid) + layers * ((recHitTools->zside(sh_detid) + 1) >> 1) - 1;
 
 	//We keep the detid of all relevant simhits of simCluster
 	hits.push_back(sh_detid.rawId());
@@ -529,12 +541,14 @@ namespace hgcal_validation
 	//Check if the current simHit has a related recHit via detid
 	std::unordered_map<DetId, const HGCRecHit*>::const_iterator itcheck = hitMap.find(sh_detid);
 	//If there is a corresponding recHit save the detid 
-        if (itcheck != hitMap.end()) {
+	if (itcheck != hitMap.end()) {
 
 	  const HGCRecHit* hit = itcheck->second;
 
 	  const GlobalPoint position = recHitTools->getPosition(sh_detid);
 	  const double energy = hit->energy();
+	  const double recostructable_energy = hit->energy() * hAndF.second;
+	  const double SoN = hit->signalOverSigmaNoise();
 
 	  matched_hits.push_back(sh_detid.rawId());
 	  //std::cout << "1 " << sh_detid.rawId() << std::endl;
@@ -545,6 +559,8 @@ namespace hgcal_validation
 	  rhInfo.rechit_phi.push_back(recHitTools->getPhi(position));
 	  rhInfo.rechit_pt.push_back(recHitTools->getPt(position,energy));
 	  rhInfo.rechit_energy.push_back(energy);
+	  rhInfo.rechit_recostructable_energy.push_back(recostructable_energy);
+	  rhInfo.rechit_SoN.push_back(SoN);
 	  rhInfo.rechit_x.push_back(position.x());
 	  rhInfo.rechit_y.push_back(position.y());
 	  rhInfo.rechit_z.push_back(position.z());
@@ -560,6 +576,8 @@ namespace hgcal_validation
 	  rhInfo.rechit_phi.push_back(-9999.);
 	  rhInfo.rechit_pt.push_back(-9999.);
 	  rhInfo.rechit_energy.push_back(-9999.);
+	  rhInfo.rechit_recostructable_energy.push_back(-9999.);
+	  rhInfo.rechit_SoN.push_back(-9999.);
 	  rhInfo.rechit_x.push_back(-9999.);
 	  rhInfo.rechit_y.push_back(-9999.);
 	  rhInfo.rechit_z.push_back(-9999.);
@@ -609,6 +627,8 @@ namespace hgcal_validation
       scInfo.simcluster_rechit_phi.push_back(rhInfo.rechit_phi);
       scInfo.simcluster_rechit_pt.push_back(rhInfo.rechit_pt);
       scInfo.simcluster_rechit_energy.push_back(rhInfo.rechit_energy);
+      scInfo.simcluster_rechit_recostructable_energy.push_back(rhInfo.rechit_recostructable_energy);
+      scInfo.simcluster_rechit_SoN.push_back(rhInfo.rechit_SoN);
       scInfo.simcluster_rechit_x.push_back(rhInfo.rechit_x);
       scInfo.simcluster_rechit_y.push_back(rhInfo.rechit_y);
       scInfo.simcluster_rechit_z.push_back(rhInfo.rechit_z);
@@ -616,6 +636,9 @@ namespace hgcal_validation
       scInfo.simcluster_rechit_simclusterid.push_back(rhInfo.rechit_simclusterid);
 
     }// end of loop through simClusters
+
+
+ 
 
   }// end of fillSimClustersInfo
 

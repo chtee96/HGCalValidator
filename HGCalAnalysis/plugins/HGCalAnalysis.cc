@@ -91,6 +91,7 @@ private:
   const bool doRecHitsTree_;
   const bool doCaloParticleTree_;
   const bool doSimClustersTree_;
+  const bool doSimClustersFromCPs_;
   edm::InputTag label_SimClustersPlots_, label_SimClustersLevel_;
   const bool doLayerClustersTree_;
   edm::InputTag label_layerClustersPlots_, label_LCToCPLinking_;
@@ -147,6 +148,7 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
   doRecHitsTree_(pset.getUntrackedParameter<bool>("doRecHitsTree")),
   doCaloParticleTree_(pset.getUntrackedParameter<bool>("doCaloParticleTree")),
   doSimClustersTree_(pset.getUntrackedParameter<bool>("doSimClustersTree")),
+  doSimClustersFromCPs_(pset.getUntrackedParameter<bool>("doSimClustersFromCPs")),
   label_SimClustersPlots_(pset.getParameter<edm::InputTag>("label_SimClusters")),
   label_SimClustersLevel_(pset.getParameter<edm::InputTag>("label_SimClustersLevel")),
   doLayerClustersTree_(pset.getUntrackedParameter<bool>("doLayerClustersTree")),
@@ -225,7 +227,7 @@ void HGCalAnalysis::beginJob() {
     }
     //make the structure we want in each tree
     hgcal_validation::createRecHitRawBranches(fTree["RecHitsRawFromHitMap"], fRecHitRawInfo);
-    hgcal_validation::createSimClustersBranches(fTree["SimClusters"], fSimClustersInfo, fRecHitInfo);
+    hgcal_validation::createSimClustersBranches(fTree["SimClusters"], fSimClustersInfo);
     hgcal_validation::createCaloParticlesBranches(fTree["CaloParticles"], fCaloParticlesInfo, fSimClustersInfo);
     hgcal_validation::createLayerClustersBranches(fTree["LayerClusters"], fLayerClustersInfo);
     //Here the trees should be in agreement with the created in the tree_ config or a
@@ -233,7 +235,7 @@ void HGCalAnalysis::beginJob() {
     for (const auto& itag : label_tst) {
       hgcal_validation::createTrackstersBranches(fTree[itag.label()], fTrackstersInfo);
       //Add to the trackster branches the relevant LayerCluster and SimCluster ones. 
-      hgcal_validation::createSimClustersBranches(fTree["SimClusters"], fSimClustersInfo, fRecHitInfo);
+      hgcal_validation::createSimClustersBranches(fTree[itag.label()], fSimClustersInfo);
       hgcal_validation::createLayerClustersBranches(fTree[itag.label()], fLayerClustersInfo);
 
     }
@@ -295,6 +297,26 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
     event.getByToken(simClusters_, simClustersHandle);
     std::vector<SimCluster> const& simClusters = *simClustersHandle;
 
+    edm::Handle<std::vector<CaloParticle>> caloParticleHandle;
+    event.getByToken(label_cp_effic, caloParticleHandle);
+    std::vector<CaloParticle> const& caloParticles = *caloParticleHandle;
+    
+    std::vector<size_t> cPIndices;
+    //Consider CaloParticles coming from the hard scatterer
+    //excluding the PU contribution and save the indices.
+    removeCPFromPU(caloParticles, cPIndices);
+
+    std::vector<SimCluster> simClustersFromCPs;
+    simClustersFromCPs.clear();
+    for (const auto& cpId : cPIndices) {
+      const SimClusterRefVector& simClusterRefVector = caloParticles[cpId].simClusters();
+      for (const auto& it_sc : simClusterRefVector) {
+      	SimCluster sc = (*(it_sc));
+	simClustersFromCPs.push_back(sc);
+      }
+    }//end of loop over caloParticles
+
+
     //To check also the unmatched rechits
     hgcal_validation::initRecHitRawInfo(fRecHitRawInfo);
     hgcal_validation::fillRecHitRawInfo(fRecHitRawInfo, *hitMap, tools_, totallayers_to_monitor_);
@@ -303,7 +325,11 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
     hgcal_validation::initRecHitInfo(fRecHitInfo);
     //Now to the SimClusters
     hgcal_validation::initSimClustersInfo(fSimClustersInfo);
-    hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClusters, *hitMap, tools_, totallayers_to_monitor_);
+    if (doSimClustersFromCPs_){
+      hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClustersFromCPs, *hitMap, tools_, totallayers_to_monitor_);
+    } else{
+      hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClusters, *hitMap, tools_, totallayers_to_monitor_);
+    }
     fTree["SimClusters"]->Fill();
 
   }//end of simClusters

@@ -28,6 +28,7 @@ parser.add_option("--verbosityLevel",help=" 0 - only basic info (default); 1 - a
 parser.add_option("--output",default="output.root",help="Name of output root file to keep the histos (default: %default)")
 parser.add_option("--genEnergy",help="Generated energy of the sample",type=int)
 parser.add_option("--outDir",default="output",help="Output directory with all plots and files (default: %default)")
+parser.add_option("--ecut",help="The rechit energy cut relative to noise",type=float)
 
 (options,args)=parser.parse_args()
 
@@ -64,14 +65,16 @@ def main():
         #simHits.to_csv('%s/%s_%s_checkOtherSide.csv' %(options.outDir,options.input.replace(".root","").split("/")[-1],options.object), index=False)
         #When simcluster id will be here use the one below
         #ddf = df[ df["rechit_simclusterid"] >= 0 ]
-        recHitCalibration(df,tree,options.maxEvents,outDir,options.output,options.genEnergy,options.verbosityLevel)
+        recHitCalibration(df,tree,options.maxEvents,outDir,options.output,options.genEnergy,options.ecut,options.verbosityLevel)
         #recHitsCalib = recHitCalibration(df[ df["sClusMatchedHits"] != 9999])
        
     if (options.object == "LayerClusters"):
         df = analyzeLayerClusters(ntuple,tree,options.maxEvents,outDir,options.output,options.genEnergy,options.verbosityLevel)
 
     if (options.object in ["ticlTrackstersEM","ticlTrackstersTrkEM","ticlTrackstersTrk","ticlTrackstersHAD","ticlTrackstersMerge","ticlSimTracksters"] ):
-        df = analyzeTracksters(ntuple,tree,options.maxEvents,outDir,options.output,options.verbosityLevel)
+        #df = analyzeTracksters(ntuple,tree,options.maxEvents,outDir,options.output,options.verbosityLevel)
+        df = analyzeSimClusters(ntuple,tree,options.maxEvents,outDir,options.output,options.verbosityLevel)
+        recHitCalibration(df,tree,options.maxEvents,outDir,options.output,options.genEnergy,options.ecut,options.verbosityLevel)        
         #print(df.head())
         
         

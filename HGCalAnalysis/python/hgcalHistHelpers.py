@@ -1254,7 +1254,7 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLev
 
 
 #---------------------------------------------------------------------------------------------------
-def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,verbosityLevel = 0):
+def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ecut,verbosityLevel = 0):
 
     histDict = {}
     #For the fit that was previously produced the regional em factors.
@@ -1284,18 +1284,33 @@ def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ver
     eratioboundaries["CE_H_Coarse_Scint_4354"] = [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
     eratioboundaries["CE_H_Coarse_Scint_4364"] =  [0.6 , 1.2]#[0.45 , 0.95]#[0.85 , 1.15]#[0.6 , 1.0]
 
+    EtaBoundariesShower = {}
+    EtaBoundariesShower["CE_E_Front_120um"] = [400, 2.3, 2.7]
+    EtaBoundariesShower["CE_E_Front_200um"] = [400, 1.8, 2.2]
+    EtaBoundariesShower["CE_E_Front_300um"] = [200, 1.5, 1.7]
+    EtaBoundariesShower["CE_H_Fine_120um"] = [400, 2.3, 2.7]
+    EtaBoundariesShower["CE_H_Fine_200um"] = [400, 1.8, 2.2]
+    EtaBoundariesShower["CE_H_Fine_300um"] = [200, 1.5, 1.7]
+    EtaBoundariesShower["CE_H_Fine_300um_Var1"] = [200, 1.5, 1.7]
+    EtaBoundariesShower["CE_H_Coarse_Scint"] = [400, 1.5, 3.5]
+    EtaBoundariesShower["CE_H_Coarse_300um"] = [200, 1.5, 1.7]
+    EtaBoundariesShower["CE_H_Fine_Scint"] = [400, 1.5, 3.5]
+     
     # Matched rechits plots
     rHxEnFrSum_m = {}
+
     recHitEneXFractionOverEgenSumPerThick = df_m.groupby(['EventId','sClusHitsThick','sClusHitsDet']).agg( recHitEneXFractionOverEgenSum  = ('recHitEneXFractionOvertheEgen','sum'))
     #The object recHitEneXFractionOverEgenSumPerThick has a multiindex so let's save the quantities we want
     #The conventions are: Tracker = 1, Muon = 2,Ecal = 3,Hcal = 4,Calo = 5,Forward = 6,VeryForward = 7,HGCalEE = 8,HGCalHSi = 9,HGCalHSc = 10,HGCalTrigger = 11 
-    rHxEnFrSum_m["CE_E_Front_120um"] = np.ma.masked_equal(recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
-    rHxEnFrSum_m["CE_E_Front_200um"] = np.ma.masked_equal(recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
-    rHxEnFrSum_m["CE_E_Front_300um"] =np.ma.masked_equal( recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
-    rHxEnFrSum_m["CE_H_Fine_120um"] = np.ma.masked_equal(recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
-    rHxEnFrSum_m["CE_H_Fine_200um"] = np.ma.masked_equal(recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
-    rHxEnFrSum_m["CE_H_Fine_300um"] =np.ma.masked_equal( recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
-    rHxEnFrSum_m["CE_H_Coarse_Scint"] = np.ma.masked_equal(recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten(),0)
+    rHxEnFrSum_m["CE_E_Front_120um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+    rHxEnFrSum_m["CE_E_Front_200um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+    rHxEnFrSum_m["CE_E_Front_300um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+    rHxEnFrSum_m["CE_H_Fine_120um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+    rHxEnFrSum_m["CE_H_Fine_200um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+    rHxEnFrSum_m["CE_H_Fine_300um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+    rHxEnFrSum_m["CE_H_Coarse_Scint"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+
+    
     #Counting hits of specific thickness
     rHitthick120 = len( df_m[ (df_m['sClusHitsThick'] == 120) ].to_numpy())
     rHitthick200 = len( df_m[ (df_m['sClusHitsThick'] == 200) ].to_numpy())
@@ -1309,25 +1324,25 @@ def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ver
         histDict[i] = histValue1D(obj, histDict[i], tag = "SumEoverEgen_%s" %(i), title = "Reconstructed hits energy over generated energy for %s" %(i),   axunit = "#sum E_{i}/E_{gen}",    binsBoundariesX = [400, 0, 2], ayunit = "N(events)", verbosityLevel=verbosityLevel)
         histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
         #A version of this plot with the fit. 
-        mycE = ROOT.TCanvas("P22E%s_thick%s"%(GenEnergy,i), "P22E%s_thick%s"%(GenEnergy,i), 500, 500)
         ROOT.gStyle.SetOptStat(0);
-        histDict[i]["SumEoverEgen_%s" %(i)].Draw("");
+        mycE = ROOT.TCanvas("P22E%s_thick%s"%(GenEnergy,i), "P22E%s_thick%s"%(GenEnergy,i), 500, 500)
+        histDict[i]["SumEoverEgen_%s" %(i)].Draw("")
         histDict[i]["SumEoverEgen_%s" %(i)].GetXaxis().SetRangeUser(eratioboundaries[i][0],eratioboundaries[i][1])
         mycE.Update()
  
-        meanE = histDict[i]["SumEoverEgen_%s" %(i)].GetMean();
-        rmsE  = histDict[i]["SumEoverEgen_%s" %(i)].GetRMS();
+        meanE = histDict[i]["SumEoverEgen_%s" %(i)].GetMean()
+        rmsE  = histDict[i]["SumEoverEgen_%s" %(i)].GetRMS()
 
         #histDict[i]["SumEoverEgen_%s" %(i)].Fit("gaus","LR0","", meanE-0.5*rmsE, meanE+1.5*rmsE);
         #histDict[i]["SumEoverEgen_%s" %(i)].Fit("gaus","LR0","");
-        histDict[i]["SumEoverEgen_%s" %(i)].Fit("gaus","LR0","",eratioboundaries[i][0],eratioboundaries[i][1]);
-        fitResult = histDict[i]["SumEoverEgen_%s" %(i)].GetFunction("gaus");
+        histDict[i]["SumEoverEgen_%s" %(i)].Fit("gaus","LR0","",eratioboundaries[i][0],eratioboundaries[i][1])
+        fitResult = histDict[i]["SumEoverEgen_%s" %(i)].GetFunction("gaus")
 
-        fitResult.SetLineColor(2);
-        meanFitE = fitResult.GetParameter(1);
-        rmsFitE = fitResult.GetParameter(2);
-        meanFitEerr = fitResult.GetParError(1);
-        rmsFitEerr = fitResult.GetParError(2);
+        fitResult.SetLineColor(2)
+        meanFitE = fitResult.GetParameter(1)
+        rmsFitE = fitResult.GetParameter(2)
+        meanFitEerr = fitResult.GetParError(1)
+        rmsFitEerr = fitResult.GetParError(2)
 
         fitResult.Draw("same")
         #latx =  histDict[i]["SumEoverEgen_%s" %(i)].GetXaxis().GetXmin()+(histDict[i]["SumEoverEgen_%s" %(i)].GetXaxis().GetXmax()-histDict[i]["SumEoverEgen_%s" %(i)].GetXaxis().GetXmin())/20.
@@ -1336,15 +1351,15 @@ def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ver
         laty =  histDict[i]["SumEoverEgen_%s" %(i)].GetMaximum()
 
         lat = ROOT.TLatex()
-        lat.DrawLatex(latx,laty*0.9, "<#sum E_{i} * frac/E_{gen}> = %3.3f +/- %3.3f"%(fitResult.GetParameter(1),fitResult.GetParError(1))    );
-        lat.DrawLatex(latx,laty*0.8, "RMSfit = %3.3f +/- %3.3f"%(fitResult.GetParameter(2),fitResult.GetParError(2))   );
-        lat.DrawLatex(latx,laty*0.7, "RMS/meanfit = %3.3f"%(fitResult.GetParameter(2)/fitResult.GetParameter(1))   );
+        lat.DrawLatex(latx,laty*0.9, "<#sum E_{i} * frac/E_{gen}> = %3.3f +/- %3.3f"%(fitResult.GetParameter(1),fitResult.GetParError(1))    )
+        lat.DrawLatex(latx,laty*0.8, "RMSfit = %3.3f +/- %3.3f"%(fitResult.GetParameter(2),fitResult.GetParError(2))   )
+        lat.DrawLatex(latx,laty*0.7, "RMS/meanfit = %3.3f"%(fitResult.GetParameter(2)/fitResult.GetParameter(1))   )
         lat.DrawLatex(latx,laty*0.6, "#chi^{2}/N = %3.3f/%d = %3.3f"%(fitResult.GetChisquare(),fitResult.GetNDF(),fitResult.GetChisquare()/fitResult.GetNDF()) )
-        #lat.DrawLatex(latx,laty*0.5, "S/N = %d "% options.ecut    );
-        lat.DrawLatex(latx,laty*0.5, "# hits %d #mum = %3.3f %%"%(120,(rHitthick120 * 100.) / rHitthickallmatched ) );
-        lat.DrawLatex(latx,laty*0.4, "# hits %d #mum = %3.3f %%"%(200,(rHitthick200 * 100.) / rHitthickallmatched ) );
-        lat.DrawLatex(latx,laty*0.3, "# hits %d #mum = %3.3f %%"%(300,(rHitthick300 * 100.) / rHitthickallmatched ) );
-        lat.DrawLatex(latx,laty*0.2, "# hits Scint #mum = %3.3f %%"%((rHitthickScint * 100.) / rHitthickallmatched ) );
+        #lat.DrawLatex(latx,laty*0.5, "S/N = %d "% options.ecut    )
+        lat.DrawLatex(latx,laty*0.5, "# hits %d #mum = %3.3f %%"%(120,(rHitthick120 * 100.) / rHitthickallmatched ) )
+        lat.DrawLatex(latx,laty*0.4, "# hits %d #mum = %3.3f %%"%(200,(rHitthick200 * 100.) / rHitthickallmatched ) )
+        lat.DrawLatex(latx,laty*0.3, "# hits %d #mum = %3.3f %%"%(300,(rHitthick300 * 100.) / rHitthickallmatched ) )
+        lat.DrawLatex(latx,laty*0.2, "# hits Scint #mum = %3.3f %%"%((rHitthickScint * 100.) / rHitthickallmatched ) )
         mycE.Update()
         mycE.SaveAs("%s/P22E%s_thick%s.png"%(outDir,GenEnergy,i))
  
@@ -1353,13 +1368,13 @@ def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ver
     rHxEnFrSum_u = {}
     recHitEneSumOvertheEgenPerThick_u = df_u.groupby(['EventId','sClusHitsThick','sClusHitsDet']).agg( recHitEneSumOvertheEgen  = ('recHitEneOvertheEgen','sum'))
 
-    rHxEnFrSum_u["CE_E_Front_120um"] = np.ma.masked_equal(recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
-    rHxEnFrSum_u["CE_E_Front_200um"] = np.ma.masked_equal(recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
-    rHxEnFrSum_u["CE_E_Front_300um"] =np.ma.masked_equal( recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
-    rHxEnFrSum_u["CE_H_Fine_120um"] = np.ma.masked_equal(recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
-    rHxEnFrSum_u["CE_H_Fine_200um"] = np.ma.masked_equal(recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
-    rHxEnFrSum_u["CE_H_Fine_300um"] =np.ma.masked_equal( recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
-    rHxEnFrSum_u["CE_H_Coarse_Scint"] = np.ma.masked_equal(recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['recHitEneSumOvertheEgen']].to_numpy().flatten(),0)
+    rHxEnFrSum_u["CE_E_Front_120um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
+    rHxEnFrSum_u["CE_E_Front_200um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
+    rHxEnFrSum_u["CE_E_Front_300um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
+    rHxEnFrSum_u["CE_H_Fine_120um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
+    rHxEnFrSum_u["CE_H_Fine_200um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
+    rHxEnFrSum_u["CE_H_Fine_300um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
+    rHxEnFrSum_u["CE_H_Coarse_Scint"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
 
     for i, obj in rHxEnFrSum_u.items():
         print(i,obj)
@@ -1435,7 +1450,7 @@ def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ver
 
         ROOT.gStyle.SetOptStat(0)
 
-        mycE2 = ROOT.TCanvas("P22E%s_RvsLayervsThickness_thick%s"%(GenEnergy,i), "P22E%s_RvsLayervsThickness_thick%s"%(GenEnergyi), 500, 500)
+        mycE2 = ROOT.TCanvas("P22E%s_RvsLayervsThickness_thick%s"%(GenEnergy,i), "P22E%s_RvsLayervsThickness_thick%s"%(GenEnergy,i), 500, 500)
 
         acustompalette()
         ex1 = ROOT.TExec("ex1","acustompalette();");
@@ -1458,8 +1473,99 @@ def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ver
             ROOT.gPad.Update()
 
         mycE2.SaveAs("%s/P22E%s_RvsLayervsThickness_thick_%s.png"%(outDir,GenEnergy,i))
-        #----------------------------------------------------------
 
+    #----------------------------------------------------------
+    # RvsEta
+    RechitRvsEta = {}
+    RechitRvsEta["CE_E_Front_120um"] = df_m.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['rechit_eta', 'R']].to_numpy()
+    RechitRvsEta["CE_E_Front_200um"] = df_m.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['rechit_eta', 'R']].to_numpy()
+    RechitRvsEta["CE_E_Front_300um"] = df_m.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['rechit_eta', 'R']].to_numpy()
+    RechitRvsEta["CE_H_Fine_120um"] = df_m.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['rechit_eta', 'R']].to_numpy()
+    RechitRvsEta["CE_H_Fine_200um"] = df_m.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['rechit_eta', 'R']].to_numpy()
+    RechitRvsEta["CE_H_Fine_300um"] = df_m.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['rechit_eta', 'R']].to_numpy()
+    RechitRvsEta["CE_H_Coarse_Scint"] = df_m.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['rechit_eta', 'R']].to_numpy()
+
+    histDict = {}
+    for i, obj in RechitRvsEta.items():
+        print(i,obj)
+        histDict[i] = {}
+        histDict[i] = histValues2D(obj, histDict[i], tag = "RvsEta_%s"%(i), title = "R vs Eta for %s" %(i), axunit = "|#eta|", binsBoundariesX = EtaBoundariesShower[i], ayunit = "R (cm)", binsBoundariesY=[100, 0., 300.], weighted2D=False, verbosityLevel=verbosityLevel)
+
+        ROOT.gStyle.SetOptStat(0)
+
+        mycE3 = ROOT.TCanvas("P22E%s_RvsEta_thick%s_ecut%d"%(GenEnergy,i,ecut), "P22E%s_RvsEta_thick%s_ecut%d"%(GenEnergy,i,ecut), 500, 500)
+
+        acustompalette()
+        ex1 = ROOT.TExec("ex1","acustompalette();");
+        ex1.Draw();
+
+        histDict[i]["RvsEta_%s"%(i)].Draw("COLZ")
+        #histDict[i]["RvsEta_%s"%(i)].GetXaxis().SetTitleOffset(0.95) 
+        mycE3.Update()
+
+        palette = histDict[i]["RvsEta_%s"%(i)].GetListOfFunctions().FindObject("palette")
+        if palette:
+            palette.__class__ = ROOT.TPaletteAxis
+            palette.SetX1NDC(0.85)
+            palette.SetX2NDC(0.9)
+            #palette.SetY1NDC(0.1)
+            #palette.SetY2NDC(0.6)
+            palette.GetAxis().SetTickSize(.01)
+            palette.GetAxis().SetTitle("Si thick")
+            palette.GetAxis().SetTitleOffset(0.8);
+            #palette.GetAxis().LabelsOption("v")
+            ROOT.gPad.Update()
+
+        mycE3.SaveAs("%s/P22E%s_RvsEta_thick%s_ecut%d.png"%(outDir,GenEnergy,i,ecut))
+
+
+
+    #----------------------------------------------------------
+    # RvsLayer
+    RechitRvsLayer = {}
+    RechitRvsLayer["CE_E_Front_120um"] = df_m.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['sClusHitsLayers', 'R']].to_numpy()
+    RechitRvsLayer["CE_E_Front_200um"] = df_m.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['sClusHitsLayers', 'R']].to_numpy()
+    RechitRvsLayer["CE_E_Front_300um"] = df_m.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['sClusHitsLayers', 'R']].to_numpy()
+    RechitRvsLayer["CE_H_Fine_120um"] = df_m.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['sClusHitsLayers', 'R']].to_numpy()
+    RechitRvsLayer["CE_H_Fine_200um"] = df_m.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['sClusHitsLayers', 'R']].to_numpy()
+    RechitRvsLayer["CE_H_Fine_300um"] = df_m.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['sClusHitsLayers', 'R']].to_numpy()
+    RechitRvsLayer["CE_H_Coarse_Scint"] = df_m.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['sClusHitsLayers', 'R']].to_numpy()
+
+    histDict = {}
+    for i, obj in RechitRvsLayer.items():
+        print(i,obj)
+        histDict[i] = {}
+        histDict[i] = histValues2D(obj, histDict[i], tag = "RvsLayer_%s"%(i), title = "R vs Layer for %s"  %(i), axunit = "Layer", binsBoundariesX = [100, 0., 100.], ayunit = "R (cm)", binsBoundariesY=[100, 0., 300.], weighted2D=False, verbosityLevel=verbosityLevel)
+
+        ROOT.gStyle.SetOptStat(0)
+
+        mycE4 = ROOT.TCanvas("P22E%s_RvsLayer_thick%s_ecut%d"%(GenEnergy,i,ecut), "P22E%s_RvsLayer_thick%s_ecut%d"%(GenEnergy,i,ecut), 500, 500)
+
+        acustompalette()
+        ex1 = ROOT.TExec("ex1","acustompalette();");
+        ex1.Draw();
+
+        histDict[i]["RvsLayer_%s"%(i)].Draw("COLZ")
+        #histDict[i]["RvsLayer_%s"%(i)].GetXaxis().SetTitleOffset(0.95) 
+        mycE4.Update()
+
+        palette = histDict[i]["RvsLayer_%s"%(i)].GetListOfFunctions().FindObject("palette")
+        if palette:
+            palette.__class__ = ROOT.TPaletteAxis
+            palette.SetX1NDC(0.85)
+            palette.SetX2NDC(0.9)
+            #palette.SetY1NDC(0.1)
+            #palette.SetY2NDC(0.6)
+            palette.GetAxis().SetTickSize(.01)
+            palette.GetAxis().SetTitle("Si thick")
+            palette.GetAxis().SetTitleOffset(0.8);
+            #palette.GetAxis().LabelsOption("v")
+            ROOT.gPad.Update()
+
+        mycE4.SaveAs("%s/P22E%s_RvsLayer_thick%s_ecut%d.png"%(outDir,GenEnergy,i,ecut))
+
+
+        
         
 #---------------------------------------------------------------------------------------------------
 def drawEdges3d_plt(df,EventId):
