@@ -31,6 +31,7 @@
 #include "DataFormats/HGCalReco/interface/TICLSeedingRegion.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
+#include "Validation/HGCalValidation/interface/CaloParticleSelector.h"
 #include "RecoLocalCalo/HGCalRecProducers/interface/HGCalClusteringAlgoBase.h"
 
 #include <boost/algorithm/string.hpp> 
@@ -55,6 +56,12 @@ public:
   ~HGCalAnalysis() override {}
 
 private:
+  void cpParametersAndSelection(std::vector<CaloParticle> const& cPeff,
+                                std::vector<SimVertex> const& simVertices,
+                                std::vector<size_t>& selected_cPeff,
+                                unsigned int layers,
+                                std::unordered_map<DetId, const HGCRecHit*> const&) const;
+
   void beginJob() override;
   void endJob() override;
   void beginRun(edm::Run const &, edm::EventSetup const &) override;
@@ -81,7 +88,7 @@ private:
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeomToken_;
   edm::InputTag label_lcl;
   std::vector<edm::InputTag> label_tst;
-  edm::InputTag label_simTSFromCP;
+  edm::InputTag label_simTS, label_simTSFromCP;
   edm::InputTag label_ticlSeedGlobal;
   edm::InputTag label_ticlSeedTrk;
   edm::InputTag associator_;
@@ -95,10 +102,11 @@ private:
   edm::InputTag label_SimClustersPlots_, label_SimClustersLevel_;
   const bool doLayerClustersTree_;
   edm::InputTag label_layerClustersPlots_, label_LCToCPLinking_;
+  const bool doCaloParticleSelection_;
   const bool doTrackstersPlots_;
   const bool doOnlyTrackstersMerge_;
   const bool doEdges_;
-  edm::InputTag label_TSToCPLinking_;
+  edm::InputTag label_TS_, label_TSToCPLinking_, label_TSToSTSPR_;
   std::vector<edm::InputTag> label_clustersmask;
   //const bool doSimTrackstersFromCPsPlots_;
 
@@ -109,7 +117,10 @@ private:
   edm::EDGetTokenT<std::vector<SimCluster>> simClusters_;
   edm::EDGetTokenT<reco::CaloClusterCollection> layerclusters_;
   std::vector<edm::EDGetTokenT<ticl::TracksterCollection>> label_tstTokens;
+  edm::EDGetTokenT<ticl::TracksterCollection> simTracksters_;
   edm::EDGetTokenT<ticl::TracksterCollection> simTrackstersFromCPs_;
+  edm::EDGetTokenT<ticl::TracksterCollection> simTracksters_fromCPs_;
+  edm::EDGetTokenT<std::map<uint, std::vector<uint>>> simTrackstersMap_;
   edm::EDGetTokenT<std::vector<TICLSeedingRegion>> ticlSeedingGlobalToken_;
   edm::EDGetTokenT<std::vector<TICLSeedingRegion>> ticlSeedingTrkToken_;
   edm::EDGetTokenT<std::vector<CaloParticle>> label_cp_effic;
@@ -122,6 +133,7 @@ private:
   edm::EDGetTokenT<std::unordered_map<DetId, const HGCRecHit*>> hitMap_;
   edm::EDGetTokenT<hgcal::RecoToSimCollection> associatorMapRtS;
   edm::EDGetTokenT<hgcal::SimToRecoCollection> associatorMapStR;
+  CaloParticleSelector cpSelector;
   edm::EDGetTokenT<hgcal::SimToRecoCollectionWithSimClusters> associatorMapSimtR;
   edm::EDGetTokenT<hgcal::RecoToSimCollectionWithSimClusters> associatorMapRtSim;
 
@@ -138,6 +150,7 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
   caloGeomToken_(esConsumes<CaloGeometry, CaloGeometryRecord>()),
   label_lcl(pset.getParameter<edm::InputTag>("label_lcl")),
   label_tst(pset.getParameter<std::vector<edm::InputTag>>("label_tst")),
+  label_simTS(pset.getParameter<edm::InputTag>("label_simTS")),
   label_simTSFromCP(pset.getParameter<edm::InputTag>("label_simTSFromCP")),
   label_ticlSeedGlobal(pset.getParameter<edm::InputTag>("label_ticlSeedGlobal")),
   label_ticlSeedTrk(pset.getParameter<edm::InputTag>("label_ticlSeedTrk")),
@@ -154,10 +167,13 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
   doLayerClustersTree_(pset.getUntrackedParameter<bool>("doLayerClustersTree")),
   label_layerClustersPlots_(pset.getParameter<edm::InputTag>("label_layerClusterPlots")),
   label_LCToCPLinking_(pset.getParameter<edm::InputTag>("label_LCToCPLinking")),
+  doCaloParticleSelection_(pset.getUntrackedParameter<bool>("doCaloParticleSelection")),
   doTrackstersPlots_(pset.getUntrackedParameter<bool>("doTrackstersPlots")),
   doOnlyTrackstersMerge_(pset.getUntrackedParameter<bool>("doOnlyTrackstersMerge")),
   doEdges_(pset.getUntrackedParameter<bool>("doEdges")),
+  label_TS_(pset.getParameter<edm::InputTag>("label_TS")),
   label_TSToCPLinking_(pset.getParameter<edm::InputTag>("label_TSToCPLinking")),
+  label_TSToSTSPR_(pset.getParameter<edm::InputTag>("label_TSToSTSPR")),
   label_clustersmask(pset.getParameter<std::vector<edm::InputTag>>("LayerClustersInputMask")),
 //  doSimTrackstersPlots_(pset.getUntrackedParameter<bool>("doSimTrackstersPlots")),
 //  doSimTrackstersFromCPsPlots_(pset.getUntrackedParameter<bool>("doSimTrackstersFromCPsPlots")),
@@ -183,9 +199,26 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
   associatorMapSimtR = consumes<hgcal::SimToRecoCollectionWithSimClusters>(associatorSim_);
   associatorMapRtSim = consumes<hgcal::RecoToSimCollectionWithSimClusters>(associatorSim_);
 
+  cpSelector = CaloParticleSelector(pset.getParameter<double>("ptMinCP"),
+                                    pset.getParameter<double>("ptMaxCP"),
+                                    pset.getParameter<double>("minRapidityCP"),
+                                    pset.getParameter<double>("maxRapidityCP"),
+                                    pset.getParameter<double>("lipCP"),
+                                    pset.getParameter<double>("tipCP"),
+                                    pset.getParameter<int>("minHitCP"),
+                                    pset.getParameter<int>("maxSimClustersCP"),
+                                    pset.getParameter<bool>("signalOnlyCP"),
+                                    pset.getParameter<bool>("intimeOnlyCP"),
+                                    pset.getParameter<bool>("chargedOnlyCP"),
+                                    pset.getParameter<bool>("stableOnlyCP"),
+                                    pset.getParameter<bool>("notConvertedOnlyCP"),
+                                    pset.getParameter<std::vector<int>>("pdgIdCP"));
+
   eeUncalibRecHitCollection_ =  consumes<HGCeeUncalibratedRecHitCollection>(pset.getParameter<edm::InputTag>("HGCEEuncalibRecHitCollection"));
   hefUncalibRecHitCollection_ = consumes<HGChefUncalibratedRecHitCollection>(pset.getParameter<edm::InputTag>("HGCHEFuncalibRecHitCollection"));
   hebUncalibRecHitCollection_ = consumes<HGChebUncalibratedRecHitCollection>(pset.getParameter<edm::InputTag>("HGCHEBuncalibRecHitCollection"));
+
+  simTrackstersMap_ = consumes<std::map<uint, std::vector<uint>>>(edm::InputTag("ticlSimTracksters"));
 
   hitMap_ = consumes<std::unordered_map<DetId, const HGCRecHit*>>(edm::InputTag("hgcalRecHitMapProducer"));
 
@@ -197,7 +230,8 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
     label_tstTokens.push_back(consumes<ticl::TracksterCollection>(itag));
   }
 
-  simTrackstersFromCPs_ = consumes<ticl::TracksterCollection>(label_simTSFromCP);
+  simTracksters_ = consumes<ticl::TracksterCollection>(label_simTS);
+  simTracksters_fromCPs_ = consumes<ticl::TracksterCollection>(label_simTSFromCP);
 
   ticlSeedingGlobalToken_ = consumes<std::vector<TICLSeedingRegion>>(label_ticlSeedGlobal);
   ticlSeedingTrkToken_ = consumes<std::vector<TICLSeedingRegion>>(label_ticlSeedTrk);
@@ -209,6 +243,24 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
   particles_to_monitor_ = pset.getParameter<std::vector<int>>("pdgIdCP");
   totallayers_to_monitor_ = pset.getParameter<int>("totallayers_to_monitor");
 
+}
+
+void HGCalAnalysis::cpParametersAndSelection(std::vector<CaloParticle> const& cPeff,
+					     std::vector<SimVertex> const& simVertices,
+					     std::vector<size_t>& selected_cPeff,
+					     unsigned int layers,
+					     std::unordered_map<DetId, const HGCRecHit*> const& hitMap) const {
+  selected_cPeff.reserve(cPeff.size());
+
+  size_t j = 0;
+  for (auto const& caloParticle : cPeff) {
+    int id = caloParticle.pdgId();
+
+    if (!doCaloParticleSelection_ || (doCaloParticleSelection_ && cpSelector(caloParticle, simVertices))) {
+      selected_cPeff.push_back(j);
+    }
+    ++j;
+  }  //end of loop over caloparticles
 }
 
 void HGCalAnalysis::beginJob() {
@@ -249,6 +301,26 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
   edm::ESHandle<CaloGeometry> geom = setup.getHandle(caloGeomToken_);
   tools_->setGeometry(*geom);
 
+  edm::Handle<ticl::TracksterCollection> simTracksterHandle;
+  event.getByToken(simTracksters_, simTracksterHandle);
+  ticl::TracksterCollection const& simTracksters = *simTracksterHandle;
+
+  edm::Handle<ticl::TracksterCollection> simTracksterFromCPHandle;
+  event.getByToken(simTracksters_fromCPs_, simTracksterFromCPHandle);
+  ticl::TracksterCollection const& simTrackstersFromCPs = *simTracksterFromCPHandle;
+
+  edm::Handle<std::map<uint, std::vector<uint>>> simTrackstersMapHandle;
+  event.getByToken(simTrackstersMap_, simTrackstersMapHandle);
+  const std::map<uint, std::vector<uint>> cpToSc_SimTrackstersMap = *simTrackstersMapHandle;
+
+  edm::Handle<std::vector<CaloParticle>> caloParticleHandle;
+  event.getByToken(label_cp_effic, caloParticleHandle);
+  std::vector<CaloParticle> const& caloParticles = *caloParticleHandle;
+
+  edm::Handle<std::vector<SimVertex>> simVerticesHandle;
+  event.getByToken(simVertices_, simVerticesHandle);
+  std::vector<SimVertex> const& simVertices = *simVerticesHandle;
+
   //Apart from the hitMap with rechits we need the uncalibrated rechits
   //which may have duplicates.
   const auto& ee_hits = event.get(eeUncalibRecHitCollection_);
@@ -271,6 +343,14 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
   edm::Handle<std::unordered_map<DetId, const HGCRecHit*>> hitMapHandle;
   event.getByToken(hitMap_, hitMapHandle);
   const std::unordered_map<DetId, const HGCRecHit*>* hitMap = &*hitMapHandle;
+
+  std::vector<size_t> cPIndices;
+  //Consider CaloParticles coming from the hard scatterer
+  //excluding the PU contribution and save the indices.
+  removeCPFromPU(caloParticles, cPIndices);
+  
+  std::vector<size_t> selected_cPeff;
+  cpParametersAndSelection(caloParticles, simVertices, selected_cPeff, totallayers_to_monitor_, *hitMap);
 
   //---------------------------------------------------------------------------------------------------
   //Event 
@@ -296,16 +376,7 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
     edm::Handle<std::vector<SimCluster>> simClustersHandle;
     event.getByToken(simClusters_, simClustersHandle);
     std::vector<SimCluster> const& simClusters = *simClustersHandle;
-
-    edm::Handle<std::vector<CaloParticle>> caloParticleHandle;
-    event.getByToken(label_cp_effic, caloParticleHandle);
-    std::vector<CaloParticle> const& caloParticles = *caloParticleHandle;
     
-    std::vector<size_t> cPIndices;
-    //Consider CaloParticles coming from the hard scatterer
-    //excluding the PU contribution and save the indices.
-    removeCPFromPU(caloParticles, cPIndices);
-
     std::vector<SimCluster> simClustersFromCPs;
     simClustersFromCPs.clear();
     for (const auto& cpId : cPIndices) {
@@ -354,15 +425,6 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
   //---------------------------------------------------------------------------------------------------
   if (doCaloParticleTree_) {
 
-    edm::Handle<std::vector<CaloParticle>> caloParticleHandle;
-    event.getByToken(label_cp_effic, caloParticleHandle);
-    std::vector<CaloParticle> const& caloParticles = *caloParticleHandle;
-    
-    std::vector<size_t> cPIndices;
-    //Consider CaloParticles coming from the hard scatterer
-    //excluding the PU contribution and save the indices.
-    removeCPFromPU(caloParticles, cPIndices);
-
     //We will also need the SimClusters, so we initialize them too. 
     hgcal_validation::initSimClustersInfo(fSimClustersInfo);
     hgcal_validation::initCaloParticlesInfo(fCaloParticlesInfo);
@@ -405,7 +467,25 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
       hgcal_validation::initSimClustersInfo(fSimClustersInfo);
       hgcal_validation::initLayerClustersInfo(fLayerClustersInfo);
       hgcal_validation::initTrackstersInfo(fTrackstersInfo);
-      hgcal_validation::fillTrackstersInfo(fTrackstersInfo, fSimClustersInfo, fLayerClustersInfo, fRecHitInfo_sc, fRecHitInfo_lc, tracksters, simClusters, clusters, ticlSeedingGlobal, ticlSeedingTrk, UnCalibHitMap, *hitMap, tools_, doEdges_, totallayers_to_monitor_);
+
+      // Pattern recognition
+      hgcal_validation::prepare_tracksters_to_SimTracksters(fTrackstersInfo,
+							    tracksters,
+							    clusters,
+							    simTracksters,
+							    1,
+							    simTrackstersFromCPs,
+							    cpToSc_SimTrackstersMap,
+							    simClusters,
+							    caloParticleHandle.id(),
+							    caloParticles,
+							    cPIndices,
+							    selected_cPeff,
+							    *hitMap,
+							    totallayers_to_monitor_);
+
+
+      // hgcal_validation::fillTrackstersInfo(fTrackstersInfo, fSimClustersInfo, fLayerClustersInfo, fRecHitInfo_sc, fRecHitInfo_lc, tracksters, simClusters, clusters, ticlSeedingGlobal, ticlSeedingTrk, UnCalibHitMap, *hitMap, tools_, doEdges_, totallayers_to_monitor_);
 
       fTree[label_tst[wml].label()]->Fill();
 

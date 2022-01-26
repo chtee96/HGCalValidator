@@ -6,18 +6,19 @@ from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import layerC
 from RecoHGCal.TICL.iterativeTICL_cff import ticlIterLabels, ticlIterLabelsMerge
 
 labelTst = [cms.InputTag("ticlTracksters"+iteration) for iteration in ticlIterLabelsMerge]
-#labelTst.extend([cms.InputTag("ticlSimTracksters", "fromCPs"), cms.InputTag("ticlSimTracksters")])
+labelTst.extend([cms.InputTag("ticlSimTracksters", "fromCPs"), cms.InputTag("ticlSimTracksters")])
 #I will add the general simTracksters collection later, be careful with the tree below. 
-labelTst.extend([cms.InputTag("ticlSimTracksters", "fromCPs")])
+#labelTst.extend([cms.InputTag("ticlSimTracksters", "fromCPs")])
 lcInputMask = [cms.InputTag("ticlTracksters"+iteration) for iteration in ticlIterLabels]
-#lcInputMask.extend([cms.InputTag("ticlSimTracksters", "fromCPs"), cms.InputTag("ticlSimTracksters")])
-lcInputMask.extend([cms.InputTag("ticlSimTracksters", "fromCPs")])
+lcInputMask.extend([cms.InputTag("ticlSimTracksters", "fromCPs"), cms.InputTag("ticlSimTracksters")])
+#lcInputMask.extend([cms.InputTag("ticlSimTracksters", "fromCPs")])
 
 HGCalAnalysis = cms.EDAnalyzer(
     "HGCalAnalysis",
 
     label_lcl = layerClusterCaloParticleAssociation.label_lc,
     label_tst = cms.VInputTag(labelTst),
+    label_simTS = cms.InputTag("ticlSimTracksters"),
     label_simTSFromCP = cms.InputTag("ticlSimTracksters", "fromCPs"),
     label_ticlSeedGlobal = cms.InputTag("ticlSeedingGlobal"),
     label_ticlSeedTrk = cms.InputTag("ticlSeedingTrk"),    
@@ -43,11 +44,15 @@ HGCalAnalysis = cms.EDAnalyzer(
     doLayerClustersTree = cms.untracked.bool(False),
     label_layerClusterPlots = cms.InputTag("hgcalLayerClusters"),
     label_LCToCPLinking = cms.InputTag("LCToCP_association"),
+    #Select caloParticles for efficiency or pass through
+    doCaloParticleSelection = cms.untracked.bool(True),
     #Trackster and SimTrakcsters trees
     doTrackstersPlots = cms.untracked.bool(False),
     doOnlyTrackstersMerge = cms.untracked.bool(True),
     doEdges = cms.untracked.bool(False),
+    label_TS = cms.InputTag("Morphology"),
     label_TSToCPLinking = cms.InputTag("TSToCP_linking"),
+    label_TSToSTSPR = cms.InputTag("TSToSTS_patternRecognition"),
     #SimTrackster from CPs tree
     #doSimTrackstersFromCPsPlots = cms.untracked.bool(True),
     ### sim input configuration ###
@@ -62,7 +67,7 @@ HGCalAnalysis = cms.EDAnalyzer(
     #Total number of layers of HGCal that we want to monitor
     #Could get this also from HGCalImagingAlgo::maxlayer but better to get it from here
     totallayers_to_monitor = cms.int32(52),
-    trees = cms.untracked.vstring(["RecHitsRawFromHitMap","SimClusters","CaloParticles","LayerClusters","ticlTrackstersTrkEM","ticlTrackstersEM","ticlTrackstersTrk","ticlTrackstersHAD","ticlTrackstersMerge","ticlSimTracksters"]),
+    trees = cms.untracked.vstring(["RecHitsRawFromHitMap","SimClusters","CaloParticles","LayerClusters","ticlTrackstersTrkEM","ticlTrackstersEM","ticlTrackstersTrk","ticlTrackstersHAD","ticlTrackstersMerge","ticlSimTracksters_fromCPs","ticlSimTracksters"]),
     createTree = cms.untracked.bool(True)
 )
 

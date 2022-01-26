@@ -69,7 +69,7 @@
     --eventcontent FEVTDEBUGHLT \
     -s RAW2DIGI,L1Reco,RECO,RECOSIM \
     --datatier GEN-SIM-RECO \
-    --geometry Extended2026D86 \
+    --geometry Extended2026D88 \
     --no_exec \
     --processName=NTUP \
     --python_filename=NTUP_fragment.py

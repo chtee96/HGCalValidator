@@ -584,3 +584,68 @@ def analyzeTracksters(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
     #histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel)
 
     return df
+#---------------------------------------------------------------------------------------------------
+# Analyze Tracksters Associators
+def analyzeTrackstersAssociators(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
+    
+    #Out variables
+    out = collections.defaultdict(list)
+    histDict = {}
+
+    #---------------------------------------------------------------------------------------------------
+    # start event loop
+    for event in ntuple:
+        currentevent = event.entry()
+        currenteventFromFile = event.event()
+        if event.entry() >= maxEvents and maxEvents != -1 : break
+        #if currentevent % 100 != 0 : continue
+        if (verbosityLevel>=1 and currentevent % 1 == 0): print( "\nCurrent event: ", currentevent)
+
+        tracksters = event.tracksters()
+
+        for trstIndex, trst in enumerate(tracksters):
+            #print(trstIndex)
+            #Fill the per Trackster variables but per SimTrackster associated to produce the dataframe
+            for tr in trst.numberOfHitsInTS():
+                out["EventId"].append(currentevent)
+                out["EventIdFromFile"].append(currenteventFromFile)
+                out["trstIndex"].append(trstIndex)
+                #This is the per trackster objects but they are stored in a vector
+                #So, we just pick one randomly to loop. There should be a single element in. 
+                out["numberOfHitsInTS"].append(tr.numberOfHitsInTS())
+                out["raw_energy"].append(tr.Raw_Energy())
+                out["numberOfNoiseHitsInTS"].append(tr.numberOfNoiseHitsInTS())
+                out["maxCPId_byNumberOfHits"].append(tr.maxCPId_byNumberOfHits())
+                out["maxCPNumberOfHitsInTS"].append(tr.maxCPNumberOfHitsInTS())
+                out["maxCPId_byEnergy"].append(tr.maxCPId_byEnergy())
+                out["maxEnergySharedTSandCP"].append(tr.maxEnergySharedTSandCP())
+                out["totalCPEnergyFromLayerCP"].append(tr.totalCPEnergyFromLayerCP())
+                out["energyFractionOfTSinCP"].append(tr.energyFractionOfTSinCP())
+                out["energyFractionOfCPinTS"].append(tr.energyFractionOfCPinTS())
+                out["cpId"].append(tr.cpId())
+                out["scId"].append(tr.scId())
+                out["Id"].append(tr.Id())
+                out["numofvertices"].append(tr.numofvertices())
+                out["numberOfHitsInTS"].append(tr.numberOfHitsInTS())
+                out["score_trackster2caloparticle"].append(tr.score_trackster2caloparticle())
+                out["sharedenergy_trackster2caloparticle"].append(tr.sharedenergy_trackster2caloparticle())
+                out["score_trackster2bestCaloparticle"].append(tr.score_trackster2bestCaloparticle())
+                out["sharedenergy_trackster2bestCaloparticle"].append(tr.sharedenergy_trackster2bestCaloparticle())
+                out["trackster2bestCaloparticle_eta"].append(tr.trackster2bestCaloparticle_eta())
+                out["trackster2bestCaloparticle_phi"].append(tr.trackster2bestCaloparticle_phi())
+                out["score_trackster2bestCaloparticle2"].append(tr.score_trackster2bestCaloparticle2())
+                out["sharedenergy_trackster2bestCaloparticle2"].append(tr.sharedenergy_trackster2bestCaloparticle2())
+
+
+    #---------------------------------------------------------------------------------------------------
+    #for key, value in out.items(): print(key, len(value))
+    #Finished loop over events. Create the per trackster-simtrackster dataframe
+    #df = pd.DataFrame(dict([ (k,pd.Series(v)) for k,v in out.items() ]))
+    data = { k: np.array(v) for k,v in out.items() }
+    ROOT.ROOT.EnableImplicitMT()
+    df = ROOT.RDF.MakeNumpyDataFrame(data)
+    #df.fillna(-99999,inplace=True)
+    print(df.head())
+
+    return df
+

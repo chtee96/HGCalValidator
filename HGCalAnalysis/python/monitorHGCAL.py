@@ -41,7 +41,9 @@ def main():
 
     #The ntuple will be created only when reading the objects
     ntuple = None
-    if options.object != "RecHitCalibration":
+    if (options.object == "TrackstersAssociators"):
+        ntuple = HGCalNtuple(options.input, "HGCalAnalysis/ticlTrackstersMerge")
+    elif options.object != "RecHitCalibration":
         ntuple = HGCalNtuple(options.input, "HGCalAnalysis/%s" %(options.object) )
 
     #The tree below where we will save all our results apart from 
@@ -76,7 +78,9 @@ def main():
         df = analyzeSimClusters(ntuple,tree,options.maxEvents,outDir,options.output,options.verbosityLevel)
         recHitCalibration(df,tree,options.maxEvents,outDir,options.output,options.genEnergy,options.ecut,options.verbosityLevel)        
         #print(df.head())
-        
+
+    if (options.object == "TrackstersAssociators"):
+        df = analyzeTrackstersAssociators(ntuple,tree,options.maxEvents,outDir,options.output,options.verbosityLevel)
         
     if (options.object == "RecHitCalibration"):
         
