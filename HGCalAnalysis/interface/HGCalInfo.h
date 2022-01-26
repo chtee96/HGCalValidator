@@ -1894,7 +1894,7 @@ namespace hgcal_validation
     return hits_and_fractions_norm;
   };
 
-  auto ScoreCutSTStoTSPurDup = ScoreCutSTStoTSPurDup_[0];
+  //auto ScoreCutSTStoTSPurDup = ScoreCutSTStoTSPurDup_[0];
   auto ScoreCutTStoSTSFakeMerge = ScoreCutTStoSTSFakeMerge_[0];
 
   // Loop through Tracksters
@@ -1902,7 +1902,7 @@ namespace hgcal_validation
     const auto& tst = tracksters[tstId];
     if (tstId == 0)
       if ((i > 0) && (tst.ticlIteration() == ticl::Trackster::SIM)) {
-        ScoreCutSTStoTSPurDup = ScoreCutSTStoTSPurDup_[i];
+        //ScoreCutSTStoTSPurDup = ScoreCutSTStoTSPurDup_[i];
         ScoreCutTStoSTSFakeMerge = ScoreCutTStoSTSFakeMerge_[i];
       }
 
