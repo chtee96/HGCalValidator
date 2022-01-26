@@ -337,6 +337,6 @@ class Tracksters(_Collection):
         tree -- TTree object
         prefix -- TBranch prefix
         """
-        super(Tracksters, self).__init__(tree, prefix + "_x", Trackster, prefix)
+        super(Tracksters, self).__init__(tree, prefix + "_Id", Trackster, prefix)
 
 

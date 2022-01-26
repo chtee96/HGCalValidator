@@ -610,31 +610,49 @@ def analyzeTrackstersAssociators(ntuple,tree,maxEvents,outDir,output,verbosityLe
                 out["EventId"].append(currentevent)
                 out["EventIdFromFile"].append(currenteventFromFile)
                 out["trstIndex"].append(trstIndex)
-                #This is the per trackster objects but they are stored in a vector
-                #So, we just pick one randomly to loop. There should be a single element in. 
-                out["numberOfHitsInTS"].append(tr.numberOfHitsInTS())
-                out["raw_energy"].append(tr.Raw_Energy())
-                out["numberOfNoiseHitsInTS"].append(tr.numberOfNoiseHitsInTS())
-                out["maxCPId_byNumberOfHits"].append(tr.maxCPId_byNumberOfHits())
-                out["maxCPNumberOfHitsInTS"].append(tr.maxCPNumberOfHitsInTS())
-                out["maxCPId_byEnergy"].append(tr.maxCPId_byEnergy())
-                out["maxEnergySharedTSandCP"].append(tr.maxEnergySharedTSandCP())
-                out["totalCPEnergyFromLayerCP"].append(tr.totalCPEnergyFromLayerCP())
-                out["energyFractionOfTSinCP"].append(tr.energyFractionOfTSinCP())
-                out["energyFractionOfCPinTS"].append(tr.energyFractionOfCPinTS())
-                out["cpId"].append(tr.cpId())
-                out["scId"].append(tr.scId())
-                out["Id"].append(tr.Id())
-                out["numofvertices"].append(tr.numofvertices())
-                out["numberOfHitsInTS"].append(tr.numberOfHitsInTS())
-                out["score_trackster2caloparticle"].append(tr.score_trackster2caloparticle())
-                out["sharedenergy_trackster2caloparticle"].append(tr.sharedenergy_trackster2caloparticle())
-                out["score_trackster2bestCaloparticle"].append(tr.score_trackster2bestCaloparticle())
-                out["sharedenergy_trackster2bestCaloparticle"].append(tr.sharedenergy_trackster2bestCaloparticle())
-                out["trackster2bestCaloparticle_eta"].append(tr.trackster2bestCaloparticle_eta())
-                out["trackster2bestCaloparticle_phi"].append(tr.trackster2bestCaloparticle_phi())
-                out["score_trackster2bestCaloparticle2"].append(tr.score_trackster2bestCaloparticle2())
-                out["sharedenergy_trackster2bestCaloparticle2"].append(tr.sharedenergy_trackster2bestCaloparticle2())
+                out["numberOfHitsInTS"].append(tr)
+            for tr in trst.Raw_Energy():
+                out["raw_energy"].append(tr)
+            for tr in trst.numberOfNoiseHitsInTS():
+                out["numberOfNoiseHitsInTS"].append(tr)
+            for tr in trst.maxCPId_byNumberOfHits():
+                out["maxCPId_byNumberOfHits"].append(tr)
+            for tr in trst.maxCPNumberOfHitsInTS():
+                out["maxCPNumberOfHitsInTS"].append(tr)
+            for tr in trst.maxCPId_byEnergy():
+                out["maxCPId_byEnergy"].append(tr)
+            for tr in trst.maxEnergySharedTSandCP():
+                out["maxEnergySharedTSandCP"].append(tr)
+            for tr in trst.totalCPEnergyFromLayerCP():
+                out["totalCPEnergyFromLayerCP"].append(tr)
+            for tr in trst.energyFractionOfTSinCP():
+                out["energyFractionOfTSinCP"].append(tr)
+            for tr in trst.energyFractionOfCPinTS():
+                out["energyFractionOfCPinTS"].append(tr)
+            for tr in trst.cpId():
+                out["cpId"].append(tr)
+            for tr in trst.scId():
+                out["scId"].append(tr)
+            for tr in trst.Id():
+                out["Id"].append(tr)
+            for tr in trst.numofvertices():
+                out["numofvertices"].append(tr)
+            for tr in trst.score_trackster2caloparticle():
+                out["score_trackster2caloparticle"].append(tr)
+            for tr in trst.sharedenergy_trackster2caloparticle():
+                out["sharedenergy_trackster2caloparticle"].append(tr)
+            #for tr in trst.score_trackster2bestCaloparticle():
+            #    out["score_trackster2bestCaloparticle"].append(tr)
+            #for tr in trst.sharedenergy_trackster2bestCaloparticle():
+            #    out["sharedenergy_trackster2bestCaloparticle"].append(tr)
+            #for tr in trst.trackster2bestCaloparticle_eta():
+            #    out["trackster2bestCaloparticle_eta"].append(tr)
+            #for tr in trst.trackster2bestCaloparticle_phi():
+            #    out["trackster2bestCaloparticle_phi"].append(tr)
+            #for tr in trst.score_trackster2bestCaloparticle2():
+            #    out["score_trackster2bestCaloparticle2"].append(tr)
+            #for tr in trst.sharedenergy_trackster2bestCaloparticle2():
+            #    out["sharedenergy_trackster2bestCaloparticle2"].append(tr)
 
 
     #---------------------------------------------------------------------------------------------------
@@ -645,7 +663,12 @@ def analyzeTrackstersAssociators(ntuple,tree,maxEvents,outDir,output,verbosityLe
     ROOT.ROOT.EnableImplicitMT()
     df = ROOT.RDF.MakeNumpyDataFrame(data)
     #df.fillna(-99999,inplace=True)
-    print(df.head())
+    #Display is not supported with multithread
+    #df.Display().Print()
+    npy = df.AsNumpy()
+    the_df = pd.DataFrame(npy)
+    print(the_df.head())
+
 
     return df
 
