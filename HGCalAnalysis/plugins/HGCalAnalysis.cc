@@ -56,17 +56,18 @@ public:
   ~HGCalAnalysis() override {}
 
 private:
-  void cpParametersAndSelection(std::vector<CaloParticle> const& cPeff,
-                                std::vector<SimVertex> const& simVertices,
-                                std::vector<size_t>& selected_cPeff,
-                                unsigned int layers,
-                                std::unordered_map<DetId, const HGCRecHit*> const&) const;
 
   void beginJob() override;
   void endJob() override;
   void beginRun(edm::Run const &, edm::EventSetup const &) override;
   void analyze(edm::Event const &, edm::EventSetup const &) override;
   void endRun(edm::Run const &, edm::EventSetup const &) override;
+  void cpParametersAndSelection(std::vector<CaloParticle> const& cPeff,
+                                std::vector<SimVertex> const& simVertices,
+                                std::vector<size_t>& selected_cPeff,
+                                unsigned int layers,
+                                std::unordered_map<DetId, const HGCRecHit*> const&) const;
+
 
 private:
 
@@ -243,24 +244,6 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
   particles_to_monitor_ = pset.getParameter<std::vector<int>>("pdgIdCPs");
   totallayers_to_monitor_ = pset.getParameter<int>("totallayers_to_monitor");
 
-}
-
-void HGCalAnalysis::cpParametersAndSelection(std::vector<CaloParticle> const& cPeff,
-					     std::vector<SimVertex> const& simVertices,
-					     std::vector<size_t>& selected_cPeff,
-					     unsigned int layers,
-					     std::unordered_map<DetId, const HGCRecHit*> const& hitMap) const {
-  selected_cPeff.reserve(cPeff.size());
-
-  size_t j = 0;
-  for (auto const& caloParticle : cPeff) {
-    int id = caloParticle.pdgId();
-
-    if (!doCaloParticleSelection_ || (doCaloParticleSelection_ && cpSelector(caloParticle, simVertices))) {
-      selected_cPeff.push_back(j);
-    }
-    ++j;
-  }  //end of loop over caloparticles
 }
 
 void HGCalAnalysis::beginJob() {
@@ -500,5 +483,24 @@ void HGCalAnalysis::beginRun(edm::Run const &iEvent, edm::EventSetup const &es) 
 void HGCalAnalysis::endRun(edm::Run const &iEvent, edm::EventSetup const &) {}
 
 void HGCalAnalysis::endJob() {}
+
+void HGCalAnalysis::cpParametersAndSelection(std::vector<CaloParticle> const& cPeff,
+					     std::vector<SimVertex> const& simVertices,
+					     std::vector<size_t>& selected_cPeff,
+					     unsigned int layers,
+					     std::unordered_map<DetId, const HGCRecHit*> const& hitMap) const {
+  selected_cPeff.reserve(cPeff.size());
+
+  size_t j = 0;
+  for (auto const& caloParticle : cPeff) {
+    int id = caloParticle.pdgId();
+
+    if (!doCaloParticleSelection_ || (doCaloParticleSelection_ && cpSelector(caloParticle, simVertices))) {
+      selected_cPeff.push_back(j);
+    }
+    ++j;
+  }  //end of loop over caloparticles
+}
+
 //define this as a plug-in
 DEFINE_FWK_MODULE(HGCalAnalysis);
