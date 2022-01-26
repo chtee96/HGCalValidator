@@ -240,7 +240,7 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
 
   tools_.reset(new hgcal::RecHitTools());
 
-  particles_to_monitor_ = pset.getParameter<std::vector<int>>("pdgIdCP");
+  particles_to_monitor_ = pset.getParameter<std::vector<int>>("pdgIdCPs");
   totallayers_to_monitor_ = pset.getParameter<int>("totallayers_to_monitor");
 
 }

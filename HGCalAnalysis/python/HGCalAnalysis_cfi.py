@@ -1,5 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
+from Validation.HGCalValidation.CaloParticleSelectionForEfficiency_cfi import *
+
 from SimCalorimetry.HGCalAssociatorProducers.LCToCPAssociation_cfi import layerClusterCaloParticleAssociation
 from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import layerClusterSimClusterAssociation
 
@@ -15,6 +17,8 @@ lcInputMask.extend([cms.InputTag("ticlSimTracksters", "fromCPs"), cms.InputTag("
 
 HGCalAnalysis = cms.EDAnalyzer(
     "HGCalAnalysis",
+    # selection of CP for evaluation of efficiency #
+    CaloParticleSelectionForEfficiency,
 
     label_lcl = layerClusterCaloParticleAssociation.label_lc,
     label_tst = cms.VInputTag(labelTst),
@@ -63,7 +67,7 @@ HGCalAnalysis = cms.EDAnalyzer(
     simVertices = cms.InputTag("g4SimHits"),
     LayerClustersInputMask = cms.VInputTag(lcInputMask),
     #311: K0, 130: K0_short, 310: K0_long
-    pdgIdCP = cms.vint32(11, -11, 13, -13, 22, 111, 211, -211, 321, -321, 311, 130, 310),
+    pdgIdCPs = cms.vint32(11, -11, 13, -13, 22, 111, 211, -211, 321, -321, 311, 130, 310),
     #Total number of layers of HGCal that we want to monitor
     #Could get this also from HGCalImagingAlgo::maxlayer but better to get it from here
     totallayers_to_monitor = cms.int32(52),
