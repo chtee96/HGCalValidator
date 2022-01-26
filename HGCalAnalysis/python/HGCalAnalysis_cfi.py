@@ -40,8 +40,8 @@ HGCalAnalysis = cms.EDAnalyzer(
     #CaloParticle tree
     doCaloParticleTree = cms.untracked.bool(False),
     #SimCluster tree
-    doSimClustersTree = cms.untracked.bool(True),
-    doSimClustersFromCPs = cms.untracked.bool(True),
+    doSimClustersTree = cms.untracked.bool(False),
+    doSimClustersFromCPs = cms.untracked.bool(False),
     label_SimClusters = cms.InputTag("SimClusters"),
     label_SimClustersLevel = cms.InputTag("ClusterLevel"),
     #Layer Cluster tree
@@ -51,7 +51,7 @@ HGCalAnalysis = cms.EDAnalyzer(
     #Select caloParticles for efficiency or pass through
     doCaloParticleSelection = cms.untracked.bool(True),
     #Trackster and SimTrakcsters trees
-    doTrackstersPlots = cms.untracked.bool(False),
+    doTrackstersPlots = cms.untracked.bool(True),
     doOnlyTrackstersMerge = cms.untracked.bool(True),
     doEdges = cms.untracked.bool(False),
     label_TS = cms.InputTag("Morphology"),
