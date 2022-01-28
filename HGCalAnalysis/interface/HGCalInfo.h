@@ -2250,9 +2250,9 @@ namespace hgcal_validation
       }  // end of loop through trackster rechits
 
       //In case of a Trackster with some energy but none related CaloParticles print some info.
-      if (stsInTrackster[tstId].empty())
-	std::cout << "Trackster Id: " << tstId << "\tSimTrackster id: -1"
-		  << "\tscore: -1\n";
+      /* if (stsInTrackster[tstId].empty()) */
+      /* 	std::cout << "Trackster Id: " << tstId << "\tSimTrackster id: -1" */
+      /* 		  << "\tscore: -1\n"; */
 
       tracksters_FakeMerge[tstId] =
         std::count_if(std::begin(stsInTrackster[tstId]),
@@ -2464,16 +2464,16 @@ namespace hgcal_validation
       if (SimEnergy > 0.f)
 	SimEnergyFractionInTSperlayer = maxEnergyTSperlayerinSim / SimEnergy;
 
-      std::cout << std::setw(12) << "caloparticle\t" << std::setw(15) << "cp total energy\t"
-				 << std::setw(15) << "cpEnergyOnLayer\t" << std::setw(14) << "CPNhitsOnLayer\t"
-				 << std::setw(18) << "tstWithMaxEnergyInCP\t" << std::setw(15) << "maxEnergyTSinCP\t"
-				 << std::setw(20) << "CPEnergyFractionInTS"
-				 << "\n";
-      std::cout << std::setw(12) << cpId << "\t" << std::setw(15) << sts.raw_energy() << "\t"
-				 << std::setw(15) << SimEnergy << "\t" << std::setw(14) << SimNumberOfHits << "\t"
-				 << std::setw(18) << tstWithMaxEnergyInCP << "\t" << std::setw(15)
-				 << maxEnergyTSperlayerinSim << "\t" << std::setw(20) << SimEnergyFractionInTSperlayer
-				 << "\n";
+      /* std::cout << std::setw(12) << "caloparticle\t" << std::setw(15) << "cp total energy\t" */
+      /* 				 << std::setw(15) << "cpEnergyOnLayer\t" << std::setw(14) << "CPNhitsOnLayer\t" */
+      /* 				 << std::setw(18) << "tstWithMaxEnergyInCP\t" << std::setw(15) << "maxEnergyTSinCP\t" */
+      /* 				 << std::setw(20) << "CPEnergyFractionInTS" */
+      /* 				 << "\n"; */
+      /* std::cout << std::setw(12) << cpId << "\t" << std::setw(15) << sts.raw_energy() << "\t" */
+      /* 				 << std::setw(15) << SimEnergy << "\t" << std::setw(14) << SimNumberOfHits << "\t" */
+      /* 				 << std::setw(18) << tstWithMaxEnergyInCP << "\t" << std::setw(15) */
+      /* 				 << maxEnergyTSperlayerinSim << "\t" << std::setw(20) << SimEnergyFractionInTSperlayer */
+      /* 				 << "\n"; */
 
       for (const auto& haf : ((i == 0) ? simOnLayer.hits_and_fractions : hafLC)) {
 	const auto& hitDetId = haf.first;
@@ -2532,18 +2532,18 @@ namespace hgcal_validation
 	  }
 	  tsPair.second.second += std::min(pow(tstFraction - cpFraction, 2), pow(cpFraction, 2)) * hitEnergyWeight;
 
-	  std::cout << "\nTracksterId:\t" << tstId << "\tSimTracksterId:\t" << iSTS << "\tcpId:\t"
-				     << cpId << "\ttstfraction, cpfraction:\t" << tstFraction << ", " << cpFraction
-				     << "\thitEnergyWeight:\t" << hitEnergyWeight << "\tadded delta:\t"
-				     << pow((tstFraction - cpFraction), 2) * hitEnergyWeight
-				     << "\tcurrent Sim-score numerator:\t" << tsPair.second.second
-				     << "\tshared Sim energy:\t" << tsPair.second.first << '\n';
+	  /* std::cout << "\nTracksterId:\t" << tstId << "\tSimTracksterId:\t" << iSTS << "\tcpId:\t" */
+	  /* 			     << cpId << "\ttstfraction, cpfraction:\t" << tstFraction << ", " << cpFraction */
+	  /* 			     << "\thitEnergyWeight:\t" << hitEnergyWeight << "\tadded delta:\t" */
+	  /* 			     << pow((tstFraction - cpFraction), 2) * hitEnergyWeight */
+	  /* 			     << "\tcurrent Sim-score numerator:\t" << tsPair.second.second */
+	  /* 			     << "\tshared Sim energy:\t" << tsPair.second.first << '\n'; */
 	}
       }  // end of loop through SimCluster SimHits on current layer
 
-      if (simOnLayer.layerClusterIdToEnergyAndScore.empty())
-	std::cout << "CP Id:\t" << cpId << "\tTS id:\t-1"
-				   << " Sub score in \t -1\n";
+      /* if (simOnLayer.layerClusterIdToEnergyAndScore.empty()) */
+      /* 	std::cout << "CP Id:\t" << cpId << "\tTS id:\t-1" */
+      /* 				   << " Sub score in \t -1\n"; */
 
       for (const auto& tsPair : simOnLayer.layerClusterIdToEnergyAndScore) {
 	const auto tstId = tsPair.first;
@@ -2612,12 +2612,12 @@ namespace hgcal_validation
 	// Now time for the denominator
 	score3d_iSTS[tstId] /= scoreDenom;
 	const auto tstSharedEnergyFrac = tstSharedEnergy[iSTS][tstId] / energyDenom;
-	std::cout << "STS id: " << iSTS << "\t(CP id: " << cpId << ")\tTS id: " << tstId
-				   << "\nSimEnergy: " << energyDenom << "\tSimEnergyWeight: " << SimEnergyWeight
-				   << "\tTrackster energy: " << tracksters[tstId].raw_energy()
-				   << "\nscore: " << score3d_iSTS[tstId]
-				   << "\tshared energy: " << tstSharedEnergy[iSTS][tstId]
-				   << "\tshared energy fraction: " << tstSharedEnergyFrac << "\n";
+	/* std::cout << "STS id: " << iSTS << "\t(CP id: " << cpId << ")\tTS id: " << tstId */
+	/* 			   << "\nSimEnergy: " << energyDenom << "\tSimEnergyWeight: " << SimEnergyWeight */
+	/* 			   << "\tTrackster energy: " << tracksters[tstId].raw_energy() */
+	/* 			   << "\nscore: " << score3d_iSTS[tstId] */
+	/* 			   << "\tshared energy: " << tstSharedEnergy[iSTS][tstId] */
+	/* 			   << "\tshared energy fraction: " << tstSharedEnergyFrac << "\n"; */
 
 	tmp_trackster_sts_cpId.push_back(cpId);
 	tmp_trackster_sts_id.push_back(iSTS);
