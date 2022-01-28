@@ -589,7 +589,8 @@ def analyzeTracksters(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
 def analyzeTrackstersAssociators(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
     
     #Out variables
-    out = collections.defaultdict(list)
+    outTS = collections.defaultdict(list)
+    outST = collections.defaultdict(list)
     histDict = {}
 
     #---------------------------------------------------------------------------------------------------
@@ -607,67 +608,115 @@ def analyzeTrackstersAssociators(ntuple,tree,maxEvents,outDir,output,verbosityLe
             #print(trstIndex)
             #Fill the per Trackster variables but per SimTrackster associated to produce the dataframe
             for tr in trst.numberOfHitsInTS():
-                out["EventId"].append(currentevent)
-                out["EventIdFromFile"].append(currenteventFromFile)
-                out["trstIndex"].append(trstIndex)
-                out["numberOfHitsInTS"].append(tr)
+                outTS["EventId"].append(currentevent)
+                outTS["EventIdFromFile"].append(currenteventFromFile)
+                outTS["trstIndex"].append(trstIndex)
+                outTS["numberOfHitsInTS"].append(tr)
             for tr in trst.Raw_Energy():
-                out["raw_energy"].append(tr)
+                outTS["raw_energy"].append(tr)
             for tr in trst.numberOfNoiseHitsInTS():
-                out["numberOfNoiseHitsInTS"].append(tr)
+                outTS["numberOfNoiseHitsInTS"].append(tr)
             for tr in trst.maxCPId_byNumberOfHits():
-                out["maxCPId_byNumberOfHits"].append(tr)
+                outTS["maxCPId_byNumberOfHits"].append(tr)
             for tr in trst.maxCPNumberOfHitsInTS():
-                out["maxCPNumberOfHitsInTS"].append(tr)
+                outTS["maxCPNumberOfHitsInTS"].append(tr)
             for tr in trst.maxCPId_byEnergy():
-                out["maxCPId_byEnergy"].append(tr)
+                outTS["maxCPId_byEnergy"].append(tr)
             for tr in trst.maxEnergySharedTSandCP():
-                out["maxEnergySharedTSandCP"].append(tr)
+                outTS["maxEnergySharedTSandCP"].append(tr)
             for tr in trst.totalCPEnergyFromLayerCP():
-                out["totalCPEnergyFromLayerCP"].append(tr)
+                outTS["totalCPEnergyFromLayerCP"].append(tr)
             for tr in trst.energyFractionOfTSinCP():
-                out["energyFractionOfTSinCP"].append(tr)
+                outTS["energyFractionOfTSinCP"].append(tr)
             for tr in trst.energyFractionOfCPinTS():
-                out["energyFractionOfCPinTS"].append(tr)
+                outTS["energyFractionOfCPinTS"].append(tr)
             for tr in trst.cpId():
-                out["cpId"].append(tr)
+                outTS["cpId"].append(tr)
             for tr in trst.scId():
-                out["scId"].append(tr)
+                outTS["scId"].append(tr)
             for tr in trst.Id():
-                out["Id"].append(tr)
+                outTS["Id"].append(tr)
             for tr in trst.numofvertices():
-                out["numofvertices"].append(tr)
+                outTS["numofvertices"].append(tr)
             for tr in trst.score_trackster2caloparticle():
-                out["score_trackster2caloparticle"].append(tr)
+                outTS["score_trackster2caloparticle"].append(tr)
             for tr in trst.sharedenergy_trackster2caloparticle():
-                out["sharedenergy_trackster2caloparticle"].append(tr)
+                outTS["sharedenergy_trackster2caloparticle"].append(tr)
             #for tr in trst.score_trackster2bestCaloparticle():
-            #    out["score_trackster2bestCaloparticle"].append(tr)
+            #    outTS["score_trackster2bestCaloparticle"].append(tr)
             #for tr in trst.sharedenergy_trackster2bestCaloparticle():
-            #    out["sharedenergy_trackster2bestCaloparticle"].append(tr)
+            #    outTS["sharedenergy_trackster2bestCaloparticle"].append(tr)
             #for tr in trst.trackster2bestCaloparticle_eta():
-            #    out["trackster2bestCaloparticle_eta"].append(tr)
+            #    outTS["trackster2bestCaloparticle_eta"].append(tr)
             #for tr in trst.trackster2bestCaloparticle_phi():
-            #    out["trackster2bestCaloparticle_phi"].append(tr)
+            #    outTS["trackster2bestCaloparticle_phi"].append(tr)
             #for tr in trst.score_trackster2bestCaloparticle2():
-            #    out["score_trackster2bestCaloparticle2"].append(tr)
+            #    outTS["score_trackster2bestCaloparticle2"].append(tr)
             #for tr in trst.sharedenergy_trackster2bestCaloparticle2():
-            #    out["sharedenergy_trackster2bestCaloparticle2"].append(tr)
-
+            #    outTS["sharedenergy_trackster2bestCaloparticle2"].append(tr)
+            for sts in trst.sts_cpId():
+                outST["EventId"].append(currentevent)
+                outST["EventIdFromFile"].append(currenteventFromFile)
+                outST["trstIndex"].append(trstIndex)
+                outST["sts_cpId"].append(sts)
+            for sts in trst.sts_id():
+                outST["sts_id"].append(sts)
+            for sts in trst.sts_ts_id():
+                outST["sts_ts_id"].append(sts)
+            for sts in trst.sts_SimEnergy():
+                outST["sts_SimEnergy"].append(sts)
+            for sts in trst.sts_SimEnergyWeight():
+                outST["sts_SimEnergyWeight"].append(sts)
+            for sts in trst.sts_trackster_raw_energy():
+                outST["sts_trackster_raw_energy"].append(sts)
+            for sts in trst.sts_score_caloparticle2trackster():
+                outST["sts_score_caloparticle2trackster"].append(sts)
+            for sts in trst.sts_sharedenergy_caloparticle2trackster():
+                outST["sts_sharedenergy_caloparticle2trackster"].append(sts)
+            for sts in trst.sts_eta():
+                outST["sts_eta"].append(sts)
+            for sts in trst.sts_phi():
+                outST["sts_phi"].append(sts)
+            for sts in trst.sts_pt():
+                outST["sts_pt"].append(sts)
+            for sts in trst.sts_raw_energy():
+                outST["sts_raw_energy"].append(sts)
+            #for sts in trst.sts_scorePur_caloparticle2trackster():
+            #    outST["sts_scorePur_caloparticle2trackster"].append(sts)
+            #for sts in trst.sts_sharedenergy_caloparticle2trackster_assoc():
+            #    outST["sts_sharedenergy_caloparticle2trackster_assoc"].append(sts)
+            #for sts in trst.sts_besttrackster_raw_energy():
+            #    outST["sts_besttrackster_raw_energy"].append(sts)
+            #for sts in trst.sts_scoreDupl_caloparticle2trackster():
+            #    outST["sts_scoreDupl_caloparticle2trackster"].append(sts)
+            #for sts in trst.sts_sharedenergy_caloparticle2trackster_assoc2():
+            #    outST["sts_sharedenergy_caloparticle2trackster_assoc2"].append(sts)
+            
 
     #---------------------------------------------------------------------------------------------------
     #for key, value in out.items(): print(key, len(value))
     #Finished loop over events. Create the per trackster-simtrackster dataframe
     #df = pd.DataFrame(dict([ (k,pd.Series(v)) for k,v in out.items() ]))
-    data = { k: np.array(v) for k,v in out.items() }
+    data = { k: np.array(v) for k,v in outTS.items() }
     ROOT.ROOT.EnableImplicitMT()
     df = ROOT.RDF.MakeNumpyDataFrame(data)
     #df.fillna(-99999,inplace=True)
     #Display is not supported with multithread
     #df.Display().Print()
     npy = df.AsNumpy()
-    the_df = pd.DataFrame(npy)
-    print(the_df.head())
+    the_df_ts = pd.DataFrame(npy)
+    print(the_df_ts.head())
+
+    #for key, value in outST.items(): print(key, len(value))
+    data = { k: np.array(v) for k,v in outST.items() }
+    df = ROOT.RDF.MakeNumpyDataFrame(data)
+    npy = df.AsNumpy()
+    the_df_sts = pd.DataFrame(npy)
+    print(the_df_sts.head())
+
+
+    #Make all the plots needed using the above dataframes
+    trackstersAssociatorsPlots(the_df_ts,the_df_sts,tree,maxEvents,outDir,output,verbosityLevel)
 
 
     return df

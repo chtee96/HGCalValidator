@@ -1835,3 +1835,235 @@ def drawDirectedGraph3D_plotly(df,dfl,EventId): #For now EventId, when looping t
     #fig.show()
 
 
+#---------------------------------------------------------------------------------------------------
+def trackstersAssociatorsPlots(df_ts,df_st,tree,maxEvents,outDir,output,verbosityLevel = 0):
+
+    #-------------------------------------------------------------------------
+    #Score - TS to SimTS
+    #
+    histDict_score = {}
+    histDict_score = histValue1D(df_ts[['score_trackster2caloparticle']].to_numpy().flatten(), histDict_score, tag = "score_TS2SimTS", title ="Score of Trackster per SimTrackster",  axunit = "score Reco-to-Sim", binsBoundariesX = [200, 0, 2], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_score, outDir, output, tree, verbosityLevel, setLogY = True)
+
+    #-------------------------------------------------------------------------
+    #Shared energy - TS to SimTS
+    #
+    histDict_shene = {}
+    histDict_shene = histValue1D(df_ts[['sharedenergy_trackster2caloparticle']].to_numpy().flatten(), histDict_shene, tag = "sharedenergy_TS2SimTS", title ="Shared Energy of Trackster per SimTrackster",  axunit = "shared Reco energy fraction", binsBoundariesX = [200, 0, 2], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_shene, outDir, output, tree, verbosityLevel, setLogY = True)
+
+    #-------------------------------------------------------------------------
+    #numberOfHitsInTS: Total number of hits in trackster, that is the sum of the hits of all LCs that
+    #                  belongs to the trackster. The histo is filled #tracksters in event x #events
+    #
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #tracksters in event x #related SimTracksters x #events. Here we undo the per SimTS entries
+    # for the numberOfHitsInTS by grouping and taking the mean. 
+    histDict_numhitsints = {}
+    df_ts_perEvent_perST = df_ts.groupby(['EventId','scId']).agg( numberOfHitsInTSperTSperEvent  = ('numberOfHitsInTS','mean'))
+    print(df_ts_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_ts[ (df_ts['EventId'] == 1099) & (df_ts['scId'] == 0)][['numberOfHitsInTS']])
+    #df_ts_perEvent_perST[['numberOfHitsInTSperTSperEvent']]
+    
+    histDict_numhitsints = histValue1D(df_ts_perEvent_perST[['numberOfHitsInTSperTSperEvent']].to_numpy().flatten(), histDict_numhitsints, tag = "numberOfHitsInTSperTSperEvent", title ="Number of hits in Trackster",  axunit = "#hits in TS", binsBoundariesX = [200, 0, 1000], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_numhitsints, outDir, output, tree, verbosityLevel, setLogY = False)
+
+    #-------------------------------------------------------------------------
+    #numberOfNoiseHitsInTS: Total number of noise hits in trackster. In the case of Linking, this is the total number of hits 
+    #                       of the trackster not related to a simhit of any SimCluster of a CaloParticle (SimTrackster from
+    #                       CPs). In the PR case it counts the number of rechits of a LC of a trackster without any matched
+    #                       simhit. This is really stronger than just a simple noise unmatched rechit, since in the
+    #                       detIdSimTSId_Map at least one simhit to belong to a LC, the whole LC is considered. 
+    #                       The histo is filled #tracksters in event x #events
+    #
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #tracksters in event x #related SimTracksters x #events. Here we undo the per SimTS entries
+    # for the numberOfNoiseHitsInTS by grouping and taking the mean. 
+    histDict_numnoisehitsints = {}
+    df_ts_perEvent_perST = df_ts.groupby(['EventId','scId']).agg( numberOfNoiseHitsInTSperTSperEvent  = ('numberOfNoiseHitsInTS','mean'))
+    print(df_ts_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_ts[ (df_ts['EventId'] == 1099) & (df_ts['scId'] == 0)][['numberOfNoiseHitsInTS']])
+    #df_ts_perEvent_perST[['numberOfNoiseHitsInTSperTSperEvent']]
+    
+    histDict_numnoisehitsints = histValue1D(df_ts_perEvent_perST[['numberOfNoiseHitsInTSperTSperEvent']].to_numpy().flatten(), histDict_numnoisehitsints, tag = "numberOfNoiseHitsInTSperTSperEvent", title ="Number of noise hits in Trackster",  axunit = "#noise hits in TS", binsBoundariesX = [200, 0, 1000], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_numnoisehitsints, outDir, output, tree, verbosityLevel, setLogY = False)
+
+    #-------------------------------------------------------------------------
+    #energyFractionOfTSinCP: 
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #tracksters in event x #related SimTracksters x #events. Here we undo the per SimTS entries
+    # for the energyFractionOfTSinCP by grouping and taking the mean. 
+    histDict_enefroftsincp = {}
+    df_ts_perEvent_perST = df_ts.groupby(['EventId','scId']).agg( energyFractionOfTSinCPperTSperEvent  = ('energyFractionOfTSinCP','mean'))
+    print(df_ts_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_ts[ (df_ts['EventId'] == 1099) & (df_ts['scId'] == 0)][['energyFractionOfTSinCP']])
+    #df_ts_perEvent_perST[['energyFractionOfTSinCPperTSperEvent']]
+    
+    histDict_enefroftsincp = histValue1D(df_ts_perEvent_perST[['energyFractionOfTSinCPperTSperEvent']].to_numpy().flatten(), histDict_enefroftsincp, tag = "energyFractionOfTSinCPperTSperEvent", title ="energyFractionOfTSinCP",  axunit = "energyFractionOfTSinCP", binsBoundariesX = [200, 0, 2], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_enefroftsincp, outDir, output, tree, verbosityLevel, setLogY = True)
+
+    #-------------------------------------------------------------------------
+    #energyFractionOfCPinTS: 
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #tracksters in event x #related SimTracksters x #events. Here we undo the per SimTS entries
+    # for the energyFractionOfCPinTS by grouping and taking the mean. 
+    histDict_enefrofcpints = {}
+    df_ts_perEvent_perST = df_ts.groupby(['EventId','scId']).agg( energyFractionOfCPinTSperTSperEvent  = ('energyFractionOfCPinTS','mean'))
+    print(df_ts_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_ts[ (df_ts['EventId'] == 1099) & (df_ts['scId'] == 0)][['energyFractionOfCPinTS']])
+    #df_ts_perEvent_perST[['energyFractionOfCPinTSperTSperEvent']]
+    
+    histDict_enefrofcpints = histValue1D(df_ts_perEvent_perST[['energyFractionOfCPinTSperTSperEvent']].to_numpy().flatten(), histDict_enefrofcpints, tag = "energyFractionOfCPinTSperTSperEvent", title ="energyFractionOfCPinTS",  axunit = "energyFractionOfCPinTS", binsBoundariesX = [200, 0, 2], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_enefrofcpints, outDir, output, tree, verbosityLevel, setLogY = True)
+
+    #-------------------------------------------------------------------------
+    #numofvertices: 
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #tracksters in event x #related SimTracksters x #events. Here we undo the per SimTS entries
+    # for the numofvertices by grouping and taking the mean. 
+    histDict_numofvert = {}
+    df_ts_perEvent_perST = df_ts.groupby(['EventId','scId']).agg( numofverticesperTSperEvent  = ('numofvertices','mean'))
+    print(df_ts_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_ts[ (df_ts['EventId'] == 1099) & (df_ts['scId'] == 0)][['numofvertices']])
+    #df_ts_perEvent_perST[['numofverticesperTSperEvent']]
+    
+    histDict_numofvert = histValue1D(df_ts_perEvent_perST[['numofverticesperTSperEvent']].to_numpy().flatten(), histDict_numofvert, tag = "numofverticesperTSperEvent", title ="Number of vertices in Trackster",  axunit = "#vertices", binsBoundariesX = [200, 0, 1000], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_numofvert, outDir, output, tree, verbosityLevel, setLogY = False)
+
+    #-------------------------------------------------------------------------
+    #raw_energy: 
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #tracksters in event x #related SimTracksters x #events. Here we undo the per SimTS entries
+    # for the raw_energy by grouping and taking the mean. 
+    histDict_rawene = {}
+    df_ts_perEvent_perST = df_ts.groupby(['EventId','scId']).agg( raw_energyperTSperEvent  = ('raw_energy','mean'))
+    print(df_ts_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_ts[ (df_ts['EventId'] == 1099) & (df_ts['scId'] == 0)][['raw_energy']])
+    #df_ts_perEvent_perST[['raw_energyperTSperEvent']]
+    
+    histDict_rawene = histValue1D(df_ts_perEvent_perST[['raw_energyperTSperEvent']].to_numpy().flatten(), histDict_rawene, tag = "raw_energyperTSperEvent", title ="Raw Energy of Trackster",  axunit = "Raw Energy (GeV)", binsBoundariesX = [200, 0, 1000], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_rawene, outDir, output, tree, verbosityLevel, setLogY = False)
+
+    #-------------------------------------------------------------------------
+    #Score - SimTS to TS
+    #
+    histDict_score = {}
+    histDict_score = histValue1D(df_st[['sts_score_caloparticle2trackster']].to_numpy().flatten(), histDict_score, tag = "score_SimTS2TS", title ="Score of SimTrackster per Trackster",  axunit = "score Sim-to-Reco", binsBoundariesX = [200, 0, 2], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_score, outDir, output, tree, verbosityLevel, setLogY = True)
+
+    #-------------------------------------------------------------------------
+    #Shared energy - SimTS to TS
+    #
+    histDict_shene = {}
+    histDict_shene = histValue1D(df_st[['sts_sharedenergy_caloparticle2trackster']].to_numpy().flatten(), histDict_shene, tag = "sharedenergy_SimTS2TS", title ="Shared Energy of SimTrackster per Trackster",  axunit = "shared Sim energy fraction", binsBoundariesX = [200, 0, 2], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_shene, outDir, output, tree, verbosityLevel, setLogY = True)
+
+    #-------------------------------------------------------------------------
+    #sts_SimEnergy:
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #simtracksters in event x #related Tracksters x #events. Here we undo the per TS entries
+    # for the sts_SimEnergy by grouping and taking the mean. 
+    histDict_sts_SimEnergy = {}
+    df_st_perEvent_perST = df_st.groupby(['EventId','sts_ts_id']).agg( sts_SimEnergyperSTSperEvent  = ('sts_SimEnergy','mean'))
+    print(df_st_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_st[ (df_st['EventId'] == 1099) & (df_st['sts_ts_id'] == 0)][['sts_SimEnergy']])
+    #df_st_perEvent_perST[['sts_SimEnergySTSperEvent']]
+    
+    histDict_sts_SimEnergy = histValue1D(df_st_perEvent_perST[['sts_SimEnergyperSTSperEvent']].to_numpy().flatten(), histDict_sts_SimEnergy, tag = "SimEnergyperSTSperEvent", title ="SimEnergy of SimTrackster",  axunit = "#simenergy in STS", binsBoundariesX = [200, 0, 1000], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_sts_SimEnergy, outDir, output, tree, verbosityLevel, setLogY = False)
+
+    #-------------------------------------------------------------------------
+    #sts_SimEnergyWeight:
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #simtracksters in event x #related Tracksters x #events. Here we undo the per TS entries
+    # for the sts_SimEnergyWeight by grouping and taking the mean. 
+    histDict_sts_SimEnergyWeight = {}
+    df_st_perEvent_perST = df_st.groupby(['EventId','sts_ts_id']).agg( sts_SimEnergyWeightperSTSperEvent  = ('sts_SimEnergyWeight','mean'))
+    print(df_st_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_st[ (df_st['EventId'] == 1099) & (df_st['sts_ts_id'] == 0)][['sts_SimEnergyWeight']])
+    #df_st_perEvent_perST[['sts_SimEnergyWeightSTSperEvent']]
+    
+    histDict_sts_SimEnergyWeight = histValue1D(df_st_perEvent_perST[['sts_SimEnergyWeightperSTSperEvent']].to_numpy().flatten(), histDict_sts_SimEnergyWeight, tag = "SimEnergyWeightperSTSperEvent", title ="SimEnergyWeight of SimTrackster",  axunit = "#simenergyweight in STS", binsBoundariesX = [200, 0, 1000], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_sts_SimEnergyWeight, outDir, output, tree, verbosityLevel, setLogY = False)
+
+    #-------------------------------------------------------------------------
+    #sts_eta:
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #simtracksters in event x #related Tracksters x #events. Here we undo the per TS entries
+    # for the sts_eta by grouping and taking the mean. 
+    histDict_sts_eta = {}
+    df_st_perEvent_perST = df_st.groupby(['EventId','sts_ts_id']).agg( sts_etaperSTSperEvent  = ('sts_eta','mean'))
+    print(df_st_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_st[ (df_st['EventId'] == 1099) & (df_st['sts_ts_id'] == 0)][['sts_eta']])
+    #df_st_perEvent_perST[['sts_etaSTSperEvent']]
+    
+    histDict_sts_eta = histValue1D(df_st_perEvent_perST[['sts_etaperSTSperEvent']].to_numpy().flatten(), histDict_sts_eta, tag = "EtaofSTS", title ="SimTrackster eta",  axunit = "eta", binsBoundariesX = [200, -5.0, 5.0], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_sts_eta, outDir, output, tree, verbosityLevel, setLogY = False)
+
+    #-------------------------------------------------------------------------
+    #sts_phi:
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #simtracksters in event x #related Tracksters x #events. Here we undo the per TS entries
+    # for the sts_phi by grouping and taking the mean. 
+    histDict_sts_phi = {}
+    df_st_perEvent_perST = df_st.groupby(['EventId','sts_ts_id']).agg( sts_phiperSTSperEvent  = ('sts_phi','mean'))
+    print(df_st_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_st[ (df_st['EventId'] == 1099) & (df_st['sts_ts_id'] == 0)][['sts_phi']])
+    #df_st_perEvent_perST[['sts_phiSTSperEvent']]
+    
+    histDict_sts_phi = histValue1D(df_st_perEvent_perST[['sts_phiperSTSperEvent']].to_numpy().flatten(), histDict_sts_phi, tag = "PhiofSTS", title ="SimTrackster phi",  axunit = "phi", binsBoundariesX = [200, -5.0, 5.0], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_sts_phi, outDir, output, tree, verbosityLevel, setLogY = False)
+
+    #-------------------------------------------------------------------------
+    #sts_pt:
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #simtracksters in event x #related Tracksters x #events. Here we undo the per TS entries
+    # for the sts_pt by grouping and taking the mean. 
+    histDict_sts_pt = {}
+    df_st_perEvent_perST = df_st.groupby(['EventId','sts_ts_id']).agg( sts_ptperSTSperEvent  = ('sts_pt','mean'))
+    print(df_st_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_st[ (df_st['EventId'] == 1099) & (df_st['sts_ts_id'] == 0)][['sts_pt']])
+    #df_st_perEvent_perST[['sts_ptSTSperEvent']]
+    
+    histDict_sts_pt = histValue1D(df_st_perEvent_perST[['sts_ptperSTSperEvent']].to_numpy().flatten(), histDict_sts_pt, tag = "PtofSTS", title ="SimTrackster pt",  axunit = "pt", binsBoundariesX = [200, 0, 1000], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_sts_pt, outDir, output, tree, verbosityLevel, setLogY = False)
+
+    #-------------------------------------------------------------------------
+    #sts_raw_energy:
+    #In order to have a dataframe with same number of lines certain variables where saved more times than it was
+    #needed, namely #simtracksters in event x #related Tracksters x #events. Here we undo the per TS entries
+    # for the sts_raw_energy by grouping and taking the mean. 
+    histDict_sts_raw_energy = {}
+    df_st_perEvent_perST = df_st.groupby(['EventId','sts_ts_id']).agg( sts_raw_energyperSTSperEvent  = ('sts_raw_energy','mean'))
+    print(df_st_perEvent_perST)
+    #These two lines below is to double check that I indeed take what I expect. 
+    #print(df_st[ (df_st['EventId'] == 1099) & (df_st['sts_ts_id'] == 0)][['sts_raw_energy']])
+    #df_st_perEvent_perST[['sts_raw_energySTSperEvent']]
+    
+    histDict_sts_raw_energy = histValue1D(df_st_perEvent_perST[['sts_raw_energyperSTSperEvent']].to_numpy().flatten(), histDict_sts_raw_energy, tag = "Raw_EnergyofSTS", title ="SimTrackster raw_energy",  axunit = "raw_energy", binsBoundariesX = [200, 0., 1000.], ayunit = "", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_sts_raw_energy, outDir, output, tree, verbosityLevel, setLogY = False)
+
+    
+
+
+
+
+
+
+
+    
+ 
+  
+
+   
