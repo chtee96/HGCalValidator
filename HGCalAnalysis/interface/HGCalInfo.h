@@ -1329,6 +1329,26 @@ namespace hgcal_validation
      std::vector<std::vector<float> > trackster_score_trackster2bestCaloparticle2;
      std::vector<std::vector<float> > trackster_sharedenergy_trackster2bestCaloparticle2;
      
+     std::vector<std::vector<unsigned int> > trackster_sts_cpId;
+     std::vector<std::vector<unsigned int> > trackster_sts_id;
+     std::vector<std::vector<unsigned int> > trackster_sts_ts_id;
+     
+     std::vector<std::vector<float> > trackster_sts_SimEnergy;
+     std::vector<std::vector<float> > trackster_sts_SimEnergyWeight;
+     std::vector<std::vector<float> > trackster_sts_trackster_raw_energy;
+     std::vector<std::vector<float> > trackster_sts_score_caloparticle2trackster;
+     std::vector<std::vector<float> > trackster_sts_sharedenergy_caloparticle2trackster;
+     std::vector<std::vector<float> > trackster_sts_eta;
+     std::vector<std::vector<float> > trackster_sts_phi;
+     std::vector<std::vector<float> > trackster_sts_pt;
+     
+     std::vector<std::vector<float> > trackster_sts_raw_energy;
+     std::vector<std::vector<float> > trackster_sts_scorePur_caloparticle2trackster;
+     std::vector<std::vector<float> > trackster_sts_sharedenergy_caloparticle2trackster_assoc;
+     std::vector<std::vector<float> > trackster_sts_besttrackster_raw_energy;
+     std::vector<std::vector<float> > trackster_sts_scoreDupl_caloparticle2trackster;
+     std::vector<std::vector<float> > trackster_sts_sharedenergy_caloparticle2trackster_assoc2;
+
      
    };
 
@@ -1393,6 +1413,25 @@ namespace hgcal_validation
      trInfo.trackster_trackster2bestCaloparticle_phi.clear();
      trInfo.trackster_score_trackster2bestCaloparticle2.clear();
      trInfo.trackster_sharedenergy_trackster2bestCaloparticle2.clear();
+
+     trInfo.trackster_sts_cpId.clear();
+     trInfo.trackster_sts_id.clear();
+     trInfo.trackster_sts_ts_id.clear();
+     trInfo.trackster_sts_SimEnergy.clear();
+     trInfo.trackster_sts_SimEnergyWeight.clear();
+     trInfo.trackster_sts_trackster_raw_energy.clear();
+     trInfo.trackster_sts_score_caloparticle2trackster.clear();
+     trInfo.trackster_sts_sharedenergy_caloparticle2trackster.clear();
+     trInfo.trackster_sts_eta.clear();
+     trInfo.trackster_sts_phi.clear();
+     trInfo.trackster_sts_pt.clear();
+     trInfo.trackster_sts_raw_energy.clear();
+     trInfo.trackster_sts_scorePur_caloparticle2trackster.clear();
+     trInfo.trackster_sts_sharedenergy_caloparticle2trackster_assoc.clear();
+     trInfo.trackster_sts_besttrackster_raw_energy.clear();
+     trInfo.trackster_sts_scoreDupl_caloparticle2trackster.clear();
+     trInfo.trackster_sts_sharedenergy_caloparticle2trackster_assoc2.clear();
+
 
      
 
@@ -1459,8 +1498,24 @@ namespace hgcal_validation
     fTree->Branch("trackster_trackster2bestCaloparticle_phi", &trInfo.trackster_trackster2bestCaloparticle_phi);
     fTree->Branch("trackster_score_trackster2bestCaloparticle2", &trInfo.trackster_score_trackster2bestCaloparticle2);
     fTree->Branch("trackster_sharedenergy_trackster2bestCaloparticle2", &trInfo.trackster_sharedenergy_trackster2bestCaloparticle2);
-
     
+    fTree->Branch("trackster_sts_cpId", &trInfo.trackster_sts_cpId);
+    fTree->Branch("trackster_sts_id", &trInfo.trackster_sts_id);
+    fTree->Branch("trackster_sts_ts_id", &trInfo.trackster_sts_ts_id);
+    fTree->Branch("trackster_sts_SimEnergy", &trInfo.trackster_sts_SimEnergy);
+    fTree->Branch("trackster_sts_SimEnergyWeight", &trInfo.trackster_sts_SimEnergyWeight);
+    fTree->Branch("trackster_sts_trackster_raw_energy", &trInfo.trackster_sts_trackster_raw_energy);
+    fTree->Branch("trackster_sts_score_caloparticle2trackster", &trInfo.trackster_sts_score_caloparticle2trackster);
+    fTree->Branch("trackster_sts_sharedenergy_caloparticle2trackster", &trInfo.trackster_sts_sharedenergy_caloparticle2trackster);
+    fTree->Branch("trackster_sts_eta", &trInfo.trackster_sts_eta);
+    fTree->Branch("trackster_sts_phi", &trInfo.trackster_sts_phi);
+    fTree->Branch("trackster_sts_pt", &trInfo.trackster_sts_pt);
+    fTree->Branch("trackster_sts_raw_energy", &trInfo.trackster_sts_raw_energy);
+    fTree->Branch("trackster_sts_scorePur_caloparticle2trackster", &trInfo.trackster_sts_scorePur_caloparticle2trackster);
+    fTree->Branch("trackster_sts_sharedenergy_caloparticle2trackster_assoc", &trInfo.trackster_sts_sharedenergy_caloparticle2trackster_assoc);
+    fTree->Branch("trackster_sts_besttrackster_raw_energy", &trInfo.trackster_sts_besttrackster_raw_energy);
+    fTree->Branch("trackster_sts_scoreDupl_caloparticle2trackster", &trInfo.trackster_sts_scoreDupl_caloparticle2trackster);
+    fTree->Branch("trackster_sts_sharedenergy_caloparticle2trackster_assoc2", &trInfo.trackster_sts_sharedenergy_caloparticle2trackster_assoc2);
 
   }
 
@@ -1757,598 +1812,876 @@ namespace hgcal_validation
       }
     }
 
-  auto getCPId = [](const ticl::Trackster& simTS,
-                    const unsigned int iSTS,
-                    const edm::ProductID& cPHandle_id,
-                    const std::map<unsigned int, std::vector<unsigned int>>& cpToSc_SimTrackstersMap,
-                    const ticl::TracksterCollection& simTSs_fromCP) {
-    unsigned int cpId = -1;
+    auto getCPId = [](const ticl::Trackster& simTS,
+		      const unsigned int iSTS,
+		      const edm::ProductID& cPHandle_id,
+		      const std::map<unsigned int, std::vector<unsigned int>>& cpToSc_SimTrackstersMap,
+		      const ticl::TracksterCollection& simTSs_fromCP) {
+								       unsigned int cpId = -1;
 
-    const auto productID = simTS.seedID();
-    if (productID == cPHandle_id) {
-      cpId = simTS.seedIndex();
-    } else {  // SimTrackster from SimCluster
-      const auto findSimTSFromCP = std::find_if(
-          std::begin(cpToSc_SimTrackstersMap),
-          std::end(cpToSc_SimTrackstersMap),
-          [&](const std::pair<unsigned int, std::vector<unsigned int>>& cpToScs) {
-            return std::find(std::begin(cpToScs.second), std::end(cpToScs.second), iSTS) != std::end(cpToScs.second);
-          });
-      if (findSimTSFromCP != std::end(cpToSc_SimTrackstersMap)) {
-        cpId = simTSs_fromCP[findSimTSFromCP->first].seedIndex();
+								       const auto productID = simTS.seedID();
+								       if (productID == cPHandle_id) {
+									 cpId = simTS.seedIndex();
+								       } else {  // SimTrackster from SimCluster
+									 const auto findSimTSFromCP = std::find_if(
+														   std::begin(cpToSc_SimTrackstersMap),
+														   std::end(cpToSc_SimTrackstersMap),
+														   [&](const std::pair<unsigned int, std::vector<unsigned int>>& cpToScs) {
+														     return std::find(std::begin(cpToScs.second), std::end(cpToScs.second), iSTS) != std::end(cpToScs.second);
+														   });
+									 if (findSimTSFromCP != std::end(cpToSc_SimTrackstersMap)) {
+									   cpId = simTSs_fromCP[findSimTSFromCP->first].seedIndex();
+									 }
+								       }
+
+								       return cpId;
+    };
+
+    auto getLCId = [](const std::vector<unsigned int>& tst_vertices,
+		      const reco::CaloClusterCollection& layerClusters,
+		      const DetId& hitid) {
+					   unsigned int lcId = -1;
+					   std::for_each(std::begin(tst_vertices), std::end(tst_vertices), [&](unsigned int idx) {
+					       const auto& lc_haf = layerClusters[idx].hitsAndFractions();
+					       const auto& hitFound = std::find_if(std::begin(lc_haf),
+										   std::end(lc_haf),
+										   [&hitid](const std::pair<DetId, float>& v) { return v.first == hitid; });
+					       if (hitFound != lc_haf.end())  // not all hits may be clusterized
+						 lcId = idx;
+					     });
+					   return lcId;
+    };
+
+    for (unsigned int iSTS = 0; iSTS < nSimTracksters; ++iSTS) {
+      const auto cpId = getCPId(simTSs[iSTS], iSTS, cPHandle_id, cpToSc_SimTrackstersMap, simTSs_fromCP);
+      if (std::find(cPIndices.begin(), cPIndices.end(), cpId) == cPIndices.end())
+	continue;
+
+      // Loop through SimClusters
+      for (const auto& simCluster : cP[cpId].simClusters()) {
+	auto iSim = simTSs[iSTS].seedIndex();
+	if (simTSs[iSTS].seedID() != cPHandle_id) {  // SimTrackster from SimCluster
+	  if (iSim != (&(*simCluster) - &(sC[0])))
+	    continue;
+	} else
+	  iSim = 0;
+
+	for (const auto& it_haf : simCluster->hits_and_fractions()) {
+	  const auto hitid = (it_haf.first);
+	  const auto lcId = getLCId(simTSs[iSTS].vertices(), layerClusters, hitid);
+	  //V9:maps the layers in -z: 0->51 and in +z: 52->103
+	  //V10:maps the layers in -z: 0->49 and in +z: 50->99
+	  const auto itcheck = hitMap.find(hitid);
+	  //Checks whether the current hit belonging to sim cluster has a reconstructed hit.
+	  if ((i == 0 && itcheck != hitMap.end()) || (i > 0 && int(lcId) >= 0)) {
+	    const auto elemId = (i == 0) ? hitid : lcId;
+	    const auto iLC = std::find(simTSs[iSTS].vertices().begin(), simTSs[iSTS].vertices().end(), lcId);
+	    const auto lcFraction =
+	      1.f / simTSs[iSTS].vertex_multiplicity(std::distance(std::begin(simTSs[iSTS].vertices()), iLC));
+	    const auto elemFr = (i == 0) ? it_haf.second : lcFraction;
+	    //Since the current hit from sim cluster has a reconstructed hit with the same detid,
+	    //make a map that will connect a detid with:
+	    //1. the CaloParticles that have a SimCluster with sim hits in that cell via caloparticle id.
+	    //2. the sum of all SimHits fractions that contributes to that detid.
+	    //So, keep in mind that in case of multiple CaloParticles contributing in the same cell
+	    //the fraction is the sum over all calo particles. So, something like:
+	    //detid: (caloparticle 1, sum of hits fractions in that detid over all cp) , (caloparticle 2, sum of hits fractions in that detid over all cp), (caloparticle 3, sum of hits fractions in that detid over all cp) ...
+	    if (detIdSimTSId_Map.find(elemId) == detIdSimTSId_Map.end()) {
+	      detIdSimTSId_Map[elemId] = std::vector<detIdInfoInCluster>();
+	      detIdSimTSId_Map[elemId].emplace_back(detIdInfoInCluster{iSTS, elemFr});
+	    } else {
+	      auto findSTSIt =
+		std::find(detIdSimTSId_Map[elemId].begin(),
+			  detIdSimTSId_Map[elemId].end(),
+			  detIdInfoInCluster{
+			    iSTS, 0});  // only the first element is used for the matching (overloaded operator==)
+	      if (findSTSIt != detIdSimTSId_Map[elemId].end()) {
+		if (i == 0)
+		  findSTSIt->fraction += elemFr;
+	      } else {
+		detIdSimTSId_Map[elemId].emplace_back(detIdInfoInCluster{iSTS, elemFr});
+	      }
+	    }
+	    const auto hitEn = itcheck->second->energy();
+	    //Since the current hit from sim cluster has a reconstructed hit with the same detid,
+	    //fill the cPOnLayer[caloparticle][layer] object with energy (sum of all rechits energy times fraction
+	    //of the relevant simhit) and keep the hit (detid and fraction) that contributed.
+	    cPOnLayer[cpId].energy += it_haf.second * hitEn;
+	    sCOnLayer[cpId][iSim].energy += lcFraction * hitEn;
+	    // Need to compress the hits and fractions in order to have a
+	    // reasonable score between CP and LC. Imagine, for example, that a
+	    // CP has detID X used by 2 SimClusters with different fractions. If
+	    // a single LC uses X with fraction 1 and is compared to the 2
+	    // contributions separately, it will be assigned a score != 0, which
+	    // is wrong.
+	    auto& haf = cPOnLayer[cpId].hits_and_fractions;
+	    auto found = std::find_if(std::begin(haf),
+				      std::end(haf),
+				      [&hitid](const std::pair<DetId, float>& v) { return v.first == hitid; });
+	    if (found != haf.end())
+	      found->second += it_haf.second;
+	    else
+	      haf.emplace_back(hitid, it_haf.second);
+	    // Same for sCOnLayer
+	    auto& haf_sc = sCOnLayer[cpId][iSim].hits_and_fractions;
+	    auto found_sc = std::find_if(std::begin(haf_sc),
+					 std::end(haf_sc),
+					 [&hitid](const std::pair<DetId, float>& v) { return v.first == hitid; });
+	    if (found_sc != haf_sc.end())
+	      found_sc->second += it_haf.second;
+	    else
+	      haf_sc.emplace_back(hitid, it_haf.second);
+	  }
+	}  // end of loop through SimHits
+      }    // end of loop through SimClusters
+    }      // end of loop through SimTracksters
+
+    auto apply_LCMultiplicity = [](const ticl::Trackster& trackster, const reco::CaloClusterCollection& layerClusters) {
+															std::vector<std::pair<DetId, float>> hits_and_fractions_norm;
+															int lcInTst = 0;
+															std::for_each(std::begin(trackster.vertices()), std::end(trackster.vertices()), [&](unsigned int idx) {
+															    const auto fraction = 1.f / trackster.vertex_multiplicity(lcInTst++);
+															    for (const auto& cell : layerClusters[idx].hitsAndFractions()) {
+															      hits_and_fractions_norm.emplace_back(
+																				   cell.first, cell.second * fraction);  // cell.second is the hit fraction in the layerCluster
+															    }
+															  });
+															return hits_and_fractions_norm;
+    };
+
+    //auto ScoreCutSTStoTSPurDup = ScoreCutSTStoTSPurDup_[0];
+    auto ScoreCutTStoSTSFakeMerge = ScoreCutTStoSTSFakeMerge_[0];
+
+    // Loop through Tracksters
+    for (unsigned int tstId = 0; tstId < nTracksters; ++tstId) {
+      const auto& tst = tracksters[tstId];
+      if (tstId == 0)
+	if ((i > 0) && (tst.ticlIteration() == ticl::Trackster::SIM)) {
+	  //ScoreCutSTStoTSPurDup = ScoreCutSTStoTSPurDup_[i];
+	  ScoreCutTStoSTSFakeMerge = ScoreCutTStoSTSFakeMerge_[i];
+	}
+
+      if (tst.vertices().empty())
+	continue;
+
+      std::unordered_map<unsigned, float> CPEnergyInTS;
+      int maxCPId_byNumberOfHits = -1;
+      unsigned int maxCPNumberOfHitsInTS = 0;
+      int maxCPId_byEnergy = -1;
+      float maxEnergySharedTSandCP = 0.f;
+      float energyFractionOfTSinCP = 0.f;
+      float energyFractionOfCPinTS = 0.f;
+
+      //In case of matched rechit-simhit, so matched
+      //CaloParticle-LayerCluster-Trackster, he counts and saves the number of
+      //rechits related to the maximum energy CaloParticle out of all
+      //CaloParticles related to that layer cluster and Trackster.
+
+      std::unordered_map<unsigned, unsigned> occurrencesCPinTS;
+      unsigned int numberOfNoiseHitsInTS = 0;
+      unsigned int numberOfHaloHitsInTS = 0;
+
+      const auto tst_hitsAndFractions = apply_LCMultiplicity(tst, layerClusters);
+      const auto numberOfHitsInTS = tst_hitsAndFractions.size();
+
+      //hitsToCaloParticleId is a vector of ints, one for each rechit of the
+      //layer cluster under study. If negative, there is no simhit from any CaloParticle related.
+      //If positive, at least one CaloParticle has been found with matched simhit.
+      //In more detail:
+      // 1. hitsToCaloParticleId[iHit] = -3
+      //    TN:  These represent Halo Cells(N) that have not been
+      //    assigned to any CaloParticle (hence the T).
+      // 2. hitsToCaloParticleId[iHit] = -2
+      //    FN: There represent Halo Cells(N) that have been assigned
+      //    to a CaloParticle (hence the F, since those should have not been marked as halo)
+      // 3. hitsToCaloParticleId[iHit] = -1
+      //    FP: These represent Real Cells(P) that have not been
+      //    assigned to any CaloParticle (hence the F, since these are fakes)
+      // 4. hitsToCaloParticleId[iHit] >= 0
+      //    TP There represent Real Cells(P) that have been assigned
+      //    to a CaloParticle (hence the T)
+      std::vector<int> hitsToCaloParticleId(numberOfHitsInTS);
+
+      //Loop through the hits of the trackster under study
+      for (unsigned int iHit = 0; iHit < numberOfHitsInTS; iHit++) {
+	const auto rh_detid = tst_hitsAndFractions[iHit].first;
+	const auto rhFraction = tst_hitsAndFractions[iHit].second;
+
+	const auto lcId_r = getLCId(tst.vertices(), layerClusters, rh_detid);
+	const auto iLC_r = std::find(tst.vertices().begin(), tst.vertices().end(), lcId_r);
+	const auto lcFraction_r = 1.f / tst.vertex_multiplicity(std::distance(std::begin(tst.vertices()), iLC_r));
+
+	//Make a map that will connect a detid (that belongs to a rechit of the layer cluster under study,
+	//no need to save others) with:
+	//1. the layer clusters that have rechits in that detid
+	//2. the fraction of the rechit of each layer cluster that contributes to that detid.
+	//So, something like:
+	//detid: (layer cluster 1, hit fraction) , (layer cluster 2, hit fraction), (layer cluster 3, hit fraction) ...
+	//here comparing with the calo particle map above the
+	if (detIdToTracksterId_Map.find(rh_detid) == detIdToTracksterId_Map.end()) {
+	  detIdToTracksterId_Map[rh_detid] = std::vector<detIdInfoInTrackster>();
+	  detIdToTracksterId_Map[rh_detid].emplace_back(
+							detIdInfoInTrackster{tstId, lcId_r, rhFraction});
+	} else {
+	  auto findTSIt =
+	    std::find(detIdToTracksterId_Map[rh_detid].begin(),
+		      detIdToTracksterId_Map[rh_detid].end(),
+		      detIdInfoInTrackster{
+			tstId, 0, 0});  // only the first element is used for the matching (overloaded operator==)
+	  if (findTSIt != detIdToTracksterId_Map[rh_detid].end()) {
+	    if (i == 0)
+	      findTSIt->fraction += rhFraction;
+	  } else {
+	    detIdToTracksterId_Map[rh_detid].emplace_back(detIdInfoInTrackster{tstId, lcId_r, rhFraction});
+	  }
+	}
+
+	// if the fraction is zero or the hit does not belong to any calo
+	// particle, set the caloparticleId for the hit to -1 this will
+	// contribute to the number of noise hits
+	// MR Remove the case in which the fraction is 0, since this could be a
+	// real hit that has been marked as halo.
+	if (rhFraction == 0.) {
+	  hitsToCaloParticleId[iHit] = -2;
+	  numberOfHaloHitsInTS++;
+	}
+
+	// Check whether the RecHit of the trackster under study has a SimHit in the same cell
+	const auto elemId = (i == 0) ? rh_detid.rawId() : lcId_r;
+	const auto recoFr = (i == 0) ? rhFraction : lcFraction_r;
+	const auto& hit_find_in_STS = detIdSimTSId_Map.find(elemId);
+	if (hit_find_in_STS == detIdSimTSId_Map.end()) {
+	  hitsToCaloParticleId[iHit] -= 1;
+	} else {
+	  // Since the hit is belonging to the layer cluster, it must be also in the rechits map
+	  const auto hitEn = hitMap.find(rh_detid)->second->energy();
+	  //const auto layerId =
+	  //recHitTools_->getLayerWithOffset(rh_detid) + layers * ((recHitTools_->zside(rh_detid) + 1) >> 1) - 1;
+	  //0;
+
+	  auto maxCPEnergyInTS = 0.f;
+	  auto maxCPId = -1;
+	  for (const auto& h : hit_find_in_STS->second) {
+	    const auto shared_fraction = std::min(recoFr, h.fraction);
+	    const auto iSTS = h.clusterId;
+	    const auto& simTS = simTSs[iSTS];
+	    auto iSim = simTS.seedIndex();
+	    if (simTSs[iSTS].seedID() == cPHandle_id)  // SimTrackster from CaloParticle
+	      iSim = 0;
+
+	    // SimTrackster with simHits connected via detid with the rechit under study
+	    //So, from all layers clusters, find the rechits that are connected with a calo particle and save/calculate the
+	    //energy of that calo particle as the sum over all rechits of the rechits energy weighted
+	    //by the caloparticle's fraction related to that rechit.
+	    const auto cpId = getCPId(simTS, iSTS, cPHandle_id, cpToSc_SimTrackstersMap, simTSs_fromCP);
+	    if (std::find(cPIndices.begin(), cPIndices.end(), cpId) == cPIndices.end())
+	      continue;
+
+	    CPEnergyInTS[cpId] += shared_fraction * hitEn;
+	    //Here cPOnLayer[caloparticle][layer] describe above is set.
+	    //Here for Tracksters with matched rechit the CP fraction times hit energy is added and saved .
+	    cPOnLayer[cpId].layerClusterIdToEnergyAndScore[tstId].first += shared_fraction * hitEn;
+	    sCOnLayer[cpId][iSim].layerClusterIdToEnergyAndScore[tstId].first += shared_fraction * hitEn;
+	    cPOnLayer[cpId].layerClusterIdToEnergyAndScore[tstId].second = FLT_MAX;
+	    sCOnLayer[cpId][iSim].layerClusterIdToEnergyAndScore[tstId].second = FLT_MAX;
+	    //stsInTrackster[trackster][STSids]
+	    //Connects a Trackster with all related SimTracksters.
+	    stsInTrackster[tstId].emplace_back(iSTS, FLT_MAX);
+	    //From all CaloParticles related to a layer cluster, it saves id and energy of the calo particle
+	    //that after simhit-rechit matching in layer has the maximum energy.
+	    if (shared_fraction > maxCPEnergyInTS) {
+	      //energy is used only here. cpid is saved for Tracksters
+	      maxCPEnergyInTS = CPEnergyInTS[cpId];
+	      maxCPId = cpId;
+	    }
+	  }
+	  //Keep in mind here maxCPId could be zero. So, below ask for negative not including zero to count noise.
+	  hitsToCaloParticleId[iHit] = maxCPId;
+	}
+
+      }  //end of loop through rechits of the layer cluster.
+
+      //Loop through all rechits to count how many of them are noise and how many are matched.
+      //In case of matched rechit-simhit, he counts and saves the number of rechits related to the maximum energy CaloParticle.
+      for (auto c : hitsToCaloParticleId) {
+	if (c < 0)
+	  numberOfNoiseHitsInTS++;
+	else
+	  occurrencesCPinTS[c]++;
       }
-    }
 
-    return cpId;
-  };
-
-  auto getLCId = [](const std::vector<unsigned int>& tst_vertices,
-                    const reco::CaloClusterCollection& layerClusters,
-                    const DetId& hitid) {
-    unsigned int lcId = -1;
-    std::for_each(std::begin(tst_vertices), std::end(tst_vertices), [&](unsigned int idx) {
-      const auto& lc_haf = layerClusters[idx].hitsAndFractions();
-      const auto& hitFound = std::find_if(std::begin(lc_haf),
-                                          std::end(lc_haf),
-                                          [&hitid](const std::pair<DetId, float>& v) { return v.first == hitid; });
-      if (hitFound != lc_haf.end())  // not all hits may be clusterized
-        lcId = idx;
-    });
-    return lcId;
-  };
-
-  for (unsigned int iSTS = 0; iSTS < nSimTracksters; ++iSTS) {
-    const auto cpId = getCPId(simTSs[iSTS], iSTS, cPHandle_id, cpToSc_SimTrackstersMap, simTSs_fromCP);
-    if (std::find(cPIndices.begin(), cPIndices.end(), cpId) == cPIndices.end())
-      continue;
-
-    // Loop through SimClusters
-    for (const auto& simCluster : cP[cpId].simClusters()) {
-      auto iSim = simTSs[iSTS].seedIndex();
-      if (simTSs[iSTS].seedID() != cPHandle_id) {  // SimTrackster from SimCluster
-        if (iSim != (&(*simCluster) - &(sC[0])))
-          continue;
-      } else
-        iSim = 0;
-
-      for (const auto& it_haf : simCluster->hits_and_fractions()) {
-        const auto hitid = (it_haf.first);
-        const auto lcId = getLCId(simTSs[iSTS].vertices(), layerClusters, hitid);
-        //V9:maps the layers in -z: 0->51 and in +z: 52->103
-        //V10:maps the layers in -z: 0->49 and in +z: 50->99
-        const auto itcheck = hitMap.find(hitid);
-        //Checks whether the current hit belonging to sim cluster has a reconstructed hit.
-        if ((i == 0 && itcheck != hitMap.end()) || (i > 0 && int(lcId) >= 0)) {
-          const auto elemId = (i == 0) ? hitid : lcId;
-          const auto iLC = std::find(simTSs[iSTS].vertices().begin(), simTSs[iSTS].vertices().end(), lcId);
-          const auto lcFraction =
-	    1.f / simTSs[iSTS].vertex_multiplicity(std::distance(std::begin(simTSs[iSTS].vertices()), iLC));
-          const auto elemFr = (i == 0) ? it_haf.second : lcFraction;
-          //Since the current hit from sim cluster has a reconstructed hit with the same detid,
-          //make a map that will connect a detid with:
-          //1. the CaloParticles that have a SimCluster with sim hits in that cell via caloparticle id.
-          //2. the sum of all SimHits fractions that contributes to that detid.
-          //So, keep in mind that in case of multiple CaloParticles contributing in the same cell
-          //the fraction is the sum over all calo particles. So, something like:
-          //detid: (caloparticle 1, sum of hits fractions in that detid over all cp) , (caloparticle 2, sum of hits fractions in that detid over all cp), (caloparticle 3, sum of hits fractions in that detid over all cp) ...
-          if (detIdSimTSId_Map.find(elemId) == detIdSimTSId_Map.end()) {
-            detIdSimTSId_Map[elemId] = std::vector<detIdInfoInCluster>();
-            detIdSimTSId_Map[elemId].emplace_back(detIdInfoInCluster{iSTS, elemFr});
-          } else {
-            auto findSTSIt =
-	      std::find(detIdSimTSId_Map[elemId].begin(),
-			detIdSimTSId_Map[elemId].end(),
-			detIdInfoInCluster{
-			  iSTS, 0});  // only the first element is used for the matching (overloaded operator==)
-            if (findSTSIt != detIdSimTSId_Map[elemId].end()) {
-              if (i == 0)
-                findSTSIt->fraction += elemFr;
-            } else {
-              detIdSimTSId_Map[elemId].emplace_back(detIdInfoInCluster{iSTS, elemFr});
-            }
-          }
-          const auto hitEn = itcheck->second->energy();
-          //Since the current hit from sim cluster has a reconstructed hit with the same detid,
-          //fill the cPOnLayer[caloparticle][layer] object with energy (sum of all rechits energy times fraction
-          //of the relevant simhit) and keep the hit (detid and fraction) that contributed.
-          cPOnLayer[cpId].energy += it_haf.second * hitEn;
-          sCOnLayer[cpId][iSim].energy += lcFraction * hitEn;
-          // Need to compress the hits and fractions in order to have a
-          // reasonable score between CP and LC. Imagine, for example, that a
-          // CP has detID X used by 2 SimClusters with different fractions. If
-          // a single LC uses X with fraction 1 and is compared to the 2
-          // contributions separately, it will be assigned a score != 0, which
-          // is wrong.
-          auto& haf = cPOnLayer[cpId].hits_and_fractions;
-          auto found = std::find_if(std::begin(haf),
-				    std::end(haf),
-				    [&hitid](const std::pair<DetId, float>& v) { return v.first == hitid; });
-          if (found != haf.end())
-            found->second += it_haf.second;
-          else
-            haf.emplace_back(hitid, it_haf.second);
-          // Same for sCOnLayer
-          auto& haf_sc = sCOnLayer[cpId][iSim].hits_and_fractions;
-          auto found_sc = std::find_if(std::begin(haf_sc),
-                                       std::end(haf_sc),
-                                       [&hitid](const std::pair<DetId, float>& v) { return v.first == hitid; });
-          if (found_sc != haf_sc.end())
-            found_sc->second += it_haf.second;
-          else
-            haf_sc.emplace_back(hitid, it_haf.second);
-        }
-      }  // end of loop through SimHits
-    }    // end of loop through SimClusters
-  }      // end of loop through SimTracksters
-
-  auto apply_LCMultiplicity = [](const ticl::Trackster& trackster, const reco::CaloClusterCollection& layerClusters) {
-    std::vector<std::pair<DetId, float>> hits_and_fractions_norm;
-    int lcInTst = 0;
-    std::for_each(std::begin(trackster.vertices()), std::end(trackster.vertices()), [&](unsigned int idx) {
-      const auto fraction = 1.f / trackster.vertex_multiplicity(lcInTst++);
-      for (const auto& cell : layerClusters[idx].hitsAndFractions()) {
-        hits_and_fractions_norm.emplace_back(
-            cell.first, cell.second * fraction);  // cell.second is the hit fraction in the layerCluster
-      }
-    });
-    return hits_and_fractions_norm;
-  };
-
-  //auto ScoreCutSTStoTSPurDup = ScoreCutSTStoTSPurDup_[0];
-  auto ScoreCutTStoSTSFakeMerge = ScoreCutTStoSTSFakeMerge_[0];
-
-  // Loop through Tracksters
-  for (unsigned int tstId = 0; tstId < nTracksters; ++tstId) {
-    const auto& tst = tracksters[tstId];
-    if (tstId == 0)
-      if ((i > 0) && (tst.ticlIteration() == ticl::Trackster::SIM)) {
-        //ScoreCutSTStoTSPurDup = ScoreCutSTStoTSPurDup_[i];
-        ScoreCutTStoSTSFakeMerge = ScoreCutTStoSTSFakeMerge_[i];
+      //Below from all maximum energy CaloParticles, he saves the one with the largest amount
+      //of related rechits.
+      for (auto& c : occurrencesCPinTS) {
+	if (c.second > maxCPNumberOfHitsInTS) {
+	  maxCPId_byNumberOfHits = c.first;
+	  maxCPNumberOfHitsInTS = c.second;
+	}
       }
 
-    if (tst.vertices().empty())
-      continue;
-
-    std::unordered_map<unsigned, float> CPEnergyInTS;
-    int maxCPId_byNumberOfHits = -1;
-    unsigned int maxCPNumberOfHitsInTS = 0;
-    int maxCPId_byEnergy = -1;
-    float maxEnergySharedTSandCP = 0.f;
-    float energyFractionOfTSinCP = 0.f;
-    float energyFractionOfCPinTS = 0.f;
-
-    //In case of matched rechit-simhit, so matched
-    //CaloParticle-LayerCluster-Trackster, he counts and saves the number of
-    //rechits related to the maximum energy CaloParticle out of all
-    //CaloParticles related to that layer cluster and Trackster.
-
-    std::unordered_map<unsigned, unsigned> occurrencesCPinTS;
-    unsigned int numberOfNoiseHitsInTS = 0;
-    unsigned int numberOfHaloHitsInTS = 0;
-
-    const auto tst_hitsAndFractions = apply_LCMultiplicity(tst, layerClusters);
-    const auto numberOfHitsInTS = tst_hitsAndFractions.size();
-
-    //hitsToCaloParticleId is a vector of ints, one for each rechit of the
-    //layer cluster under study. If negative, there is no simhit from any CaloParticle related.
-    //If positive, at least one CaloParticle has been found with matched simhit.
-    //In more detail:
-    // 1. hitsToCaloParticleId[iHit] = -3
-    //    TN:  These represent Halo Cells(N) that have not been
-    //    assigned to any CaloParticle (hence the T).
-    // 2. hitsToCaloParticleId[iHit] = -2
-    //    FN: There represent Halo Cells(N) that have been assigned
-    //    to a CaloParticle (hence the F, since those should have not been marked as halo)
-    // 3. hitsToCaloParticleId[iHit] = -1
-    //    FP: These represent Real Cells(P) that have not been
-    //    assigned to any CaloParticle (hence the F, since these are fakes)
-    // 4. hitsToCaloParticleId[iHit] >= 0
-    //    TP There represent Real Cells(P) that have been assigned
-    //    to a CaloParticle (hence the T)
-    std::vector<int> hitsToCaloParticleId(numberOfHitsInTS);
-
-    //Loop through the hits of the trackster under study
-    for (unsigned int iHit = 0; iHit < numberOfHitsInTS; iHit++) {
-      const auto rh_detid = tst_hitsAndFractions[iHit].first;
-      const auto rhFraction = tst_hitsAndFractions[iHit].second;
-
-      const auto lcId_r = getLCId(tst.vertices(), layerClusters, rh_detid);
-      const auto iLC_r = std::find(tst.vertices().begin(), tst.vertices().end(), lcId_r);
-      const auto lcFraction_r = 1.f / tst.vertex_multiplicity(std::distance(std::begin(tst.vertices()), iLC_r));
-
-      //Make a map that will connect a detid (that belongs to a rechit of the layer cluster under study,
-      //no need to save others) with:
-      //1. the layer clusters that have rechits in that detid
-      //2. the fraction of the rechit of each layer cluster that contributes to that detid.
-      //So, something like:
-      //detid: (layer cluster 1, hit fraction) , (layer cluster 2, hit fraction), (layer cluster 3, hit fraction) ...
-      //here comparing with the calo particle map above the
-      if (detIdToTracksterId_Map.find(rh_detid) == detIdToTracksterId_Map.end()) {
-        detIdToTracksterId_Map[rh_detid] = std::vector<detIdInfoInTrackster>();
-        detIdToTracksterId_Map[rh_detid].emplace_back(
-						      detIdInfoInTrackster{tstId, lcId_r, rhFraction});
-      } else {
-        auto findTSIt =
-	  std::find(detIdToTracksterId_Map[rh_detid].begin(),
-		    detIdToTracksterId_Map[rh_detid].end(),
-		    detIdInfoInTrackster{
-		      tstId, 0, 0});  // only the first element is used for the matching (overloaded operator==)
-        if (findTSIt != detIdToTracksterId_Map[rh_detid].end()) {
-          if (i == 0)
-            findTSIt->fraction += rhFraction;
-        } else {
-          detIdToTracksterId_Map[rh_detid].emplace_back(detIdInfoInTrackster{tstId, lcId_r, rhFraction});
-        }
+      //Find the CaloParticle that has the maximum energy shared with the Trackster under study.
+      for (auto& c : CPEnergyInTS) {
+	if (c.second > maxEnergySharedTSandCP) {
+	  maxCPId_byEnergy = c.first;
+	  maxEnergySharedTSandCP = c.second;
+	}
+      }
+      //The energy of the CaloParticle that found to have the maximum energy shared with the Trackster under study.
+      float totalCPEnergyFromLayerCP = 0.f;
+      if (maxCPId_byEnergy >= 0) {
+	//Loop through all layers
+	//for (unsigned int j = 0; j < layers * 2; ++j) {
+	totalCPEnergyFromLayerCP += cPOnLayer[maxCPId_byEnergy].energy;
+	//}
+	energyFractionOfCPinTS = maxEnergySharedTSandCP / totalCPEnergyFromLayerCP;
+	if (tst.raw_energy() > 0.f) {
+	  energyFractionOfTSinCP = maxEnergySharedTSandCP / tst.raw_energy();
+	}
       }
 
-      // if the fraction is zero or the hit does not belong to any calo
-      // particle, set the caloparticleId for the hit to -1 this will
-      // contribute to the number of noise hits
-      // MR Remove the case in which the fraction is 0, since this could be a
-      // real hit that has been marked as halo.
-      if (rhFraction == 0.) {
-        hitsToCaloParticleId[iHit] = -2;
-        numberOfHaloHitsInTS++;
-      }
+      tmp_trackster_raw_energy[tstId] = tst.raw_energy();
+      tmp_trackster_numberOfHitsInTS[tstId] = numberOfHitsInTS;
+      tmp_trackster_numberOfNoiseHitsInTS[tstId] = numberOfNoiseHitsInTS;
+      tmp_trackster_maxCPId_byNumberOfHits[tstId] = maxCPId_byNumberOfHits;
+      tmp_trackster_maxCPNumberOfHitsInTS[tstId] = maxCPNumberOfHitsInTS;
+      tmp_trackster_maxCPId_byEnergy[tstId] = maxCPId_byEnergy;
+      tmp_trackster_maxEnergySharedTSandCP[tstId] = maxEnergySharedTSandCP;
+      tmp_trackster_totalCPEnergyFromLayerCP[tstId] = totalCPEnergyFromLayerCP;
+      tmp_trackster_energyFractionOfTSinCP[tstId] = energyFractionOfTSinCP;
+      tmp_trackster_energyFractionOfCPinTS[tstId] = energyFractionOfCPinTS;
 
-      // Check whether the RecHit of the trackster under study has a SimHit in the same cell
-      const auto elemId = (i == 0) ? rh_detid.rawId() : lcId_r;
-      const auto recoFr = (i == 0) ? rhFraction : lcFraction_r;
-      const auto& hit_find_in_STS = detIdSimTSId_Map.find(elemId);
-      if (hit_find_in_STS == detIdSimTSId_Map.end()) {
-        hitsToCaloParticleId[iHit] -= 1;
-      } else {
-        // Since the hit is belonging to the layer cluster, it must be also in the rechits map
-        const auto hitEn = hitMap.find(rh_detid)->second->energy();
-        //const auto layerId =
-        //recHitTools_->getLayerWithOffset(rh_detid) + layers * ((recHitTools_->zside(rh_detid) + 1) >> 1) - 1;
-        //0;
+      /* Std::Cout << std::setw(12) << "Trackster\t" << std::setw(10) << "energy\t" << std::setw(5) */
+      /*                            << "nhits\t" << std::setw(12) << "noise hits\t" << std::setw(22) */
+      /*                            << "maxCPId_byNumberOfHits\t" << std::setw(8) << "nhitsCP\t" << std::setw(16) */
+      /*                            << "maxCPId_byEnergy\t" << std::setw(23) << "maxEnergySharedTSandCP\t" << std::setw(22) */
+      /*                            << "totalCPEnergyFromAllLayerCP\t" << std::setw(22) << "energyFractionOfTSinCP\t" */
+      /*                            << std::setw(25) << "energyFractionOfCPinTS\t" << std::endl; */
+      /* std::cout << std::setw(12) << tstId << "\t"   */
+      /*                            << std::setw(10) << tst.raw_energy() << "\t" << std::setw(5) << numberOfHitsInTS << "\t" */
+      /*                            << std::setw(12) << numberOfNoiseHitsInTS << "\t" << std::setw(22) */
+      /*                            << maxCPId_byNumberOfHits << "\t" << std::setw(8) << maxCPNumberOfHitsInTS << "\t" */
+      /*                            << std::setw(16) << maxCPId_byEnergy << "\t" << std::setw(23) << maxEnergySharedTSandCP */
+      /*                            << "\t" << std::setw(22) << totalCPEnergyFromLayerCP << "\t" << std::setw(22) */
+      /*                            << energyFractionOfTSinCP << "\t" << std::setw(25) << energyFractionOfCPinTS */
+      /*                            << std::endl; */
 
-        auto maxCPEnergyInTS = 0.f;
-        auto maxCPId = -1;
-        for (const auto& h : hit_find_in_STS->second) {
-          const auto shared_fraction = std::min(recoFr, h.fraction);
-          const auto iSTS = h.clusterId;
-          const auto& simTS = simTSs[iSTS];
-          auto iSim = simTS.seedIndex();
-          if (simTSs[iSTS].seedID() == cPHandle_id)  // SimTrackster from CaloParticle
-            iSim = 0;
-
-          // SimTrackster with simHits connected via detid with the rechit under study
-          //So, from all layers clusters, find the rechits that are connected with a calo particle and save/calculate the
-          //energy of that calo particle as the sum over all rechits of the rechits energy weighted
-          //by the caloparticle's fraction related to that rechit.
-          const auto cpId = getCPId(simTS, iSTS, cPHandle_id, cpToSc_SimTrackstersMap, simTSs_fromCP);
-          if (std::find(cPIndices.begin(), cPIndices.end(), cpId) == cPIndices.end())
-            continue;
-
-          CPEnergyInTS[cpId] += shared_fraction * hitEn;
-          //Here cPOnLayer[caloparticle][layer] describe above is set.
-          //Here for Tracksters with matched rechit the CP fraction times hit energy is added and saved .
-          cPOnLayer[cpId].layerClusterIdToEnergyAndScore[tstId].first += shared_fraction * hitEn;
-          sCOnLayer[cpId][iSim].layerClusterIdToEnergyAndScore[tstId].first += shared_fraction * hitEn;
-          cPOnLayer[cpId].layerClusterIdToEnergyAndScore[tstId].second = FLT_MAX;
-          sCOnLayer[cpId][iSim].layerClusterIdToEnergyAndScore[tstId].second = FLT_MAX;
-          //stsInTrackster[trackster][STSids]
-          //Connects a Trackster with all related SimTracksters.
-          stsInTrackster[tstId].emplace_back(iSTS, FLT_MAX);
-          //From all CaloParticles related to a layer cluster, it saves id and energy of the calo particle
-          //that after simhit-rechit matching in layer has the maximum energy.
-          if (shared_fraction > maxCPEnergyInTS) {
-            //energy is used only here. cpid is saved for Tracksters
-            maxCPEnergyInTS = CPEnergyInTS[cpId];
-            maxCPId = cpId;
-          }
-        }
-        //Keep in mind here maxCPId could be zero. So, below ask for negative not including zero to count noise.
-        hitsToCaloParticleId[iHit] = maxCPId;
-      }
-
-    }  //end of loop through rechits of the layer cluster.
-
-    //Loop through all rechits to count how many of them are noise and how many are matched.
-    //In case of matched rechit-simhit, he counts and saves the number of rechits related to the maximum energy CaloParticle.
-    for (auto c : hitsToCaloParticleId) {
-      if (c < 0)
-        numberOfNoiseHitsInTS++;
-      else
-        occurrencesCPinTS[c]++;
-    }
-
-    //Below from all maximum energy CaloParticles, he saves the one with the largest amount
-    //of related rechits.
-    for (auto& c : occurrencesCPinTS) {
-      if (c.second > maxCPNumberOfHitsInTS) {
-        maxCPId_byNumberOfHits = c.first;
-        maxCPNumberOfHitsInTS = c.second;
-      }
-    }
-
-    //Find the CaloParticle that has the maximum energy shared with the Trackster under study.
-    for (auto& c : CPEnergyInTS) {
-      if (c.second > maxEnergySharedTSandCP) {
-        maxCPId_byEnergy = c.first;
-        maxEnergySharedTSandCP = c.second;
-      }
-    }
-    //The energy of the CaloParticle that found to have the maximum energy shared with the Trackster under study.
-    float totalCPEnergyFromLayerCP = 0.f;
-    if (maxCPId_byEnergy >= 0) {
-      //Loop through all layers
-      //for (unsigned int j = 0; j < layers * 2; ++j) {
-      totalCPEnergyFromLayerCP += cPOnLayer[maxCPId_byEnergy].energy;
-      //}
-      energyFractionOfCPinTS = maxEnergySharedTSandCP / totalCPEnergyFromLayerCP;
-      if (tst.raw_energy() > 0.f) {
-        energyFractionOfTSinCP = maxEnergySharedTSandCP / tst.raw_energy();
-      }
-    }
-
-    tmp_trackster_raw_energy[tstId] = tst.raw_energy();
-    tmp_trackster_numberOfHitsInTS[tstId] = numberOfHitsInTS;
-    tmp_trackster_numberOfNoiseHitsInTS[tstId] = numberOfNoiseHitsInTS;
-    tmp_trackster_maxCPId_byNumberOfHits[tstId] = maxCPId_byNumberOfHits;
-    tmp_trackster_maxCPNumberOfHitsInTS[tstId] = maxCPNumberOfHitsInTS;
-    tmp_trackster_maxCPId_byEnergy[tstId] = maxCPId_byEnergy;
-    tmp_trackster_maxEnergySharedTSandCP[tstId] = maxEnergySharedTSandCP;
-    tmp_trackster_totalCPEnergyFromLayerCP[tstId] = totalCPEnergyFromLayerCP;
-    tmp_trackster_energyFractionOfTSinCP[tstId] = energyFractionOfTSinCP;
-    tmp_trackster_energyFractionOfCPinTS[tstId] = energyFractionOfCPinTS;
-
-    /* Std::Cout << std::setw(12) << "Trackster\t" << std::setw(10) << "energy\t" << std::setw(5) */
-    /*                            << "nhits\t" << std::setw(12) << "noise hits\t" << std::setw(22) */
-    /*                            << "maxCPId_byNumberOfHits\t" << std::setw(8) << "nhitsCP\t" << std::setw(16) */
-    /*                            << "maxCPId_byEnergy\t" << std::setw(23) << "maxEnergySharedTSandCP\t" << std::setw(22) */
-    /*                            << "totalCPEnergyFromAllLayerCP\t" << std::setw(22) << "energyFractionOfTSinCP\t" */
-    /*                            << std::setw(25) << "energyFractionOfCPinTS\t" << std::endl; */
-    /* std::cout << std::setw(12) << tstId << "\t"   */
-    /*                            << std::setw(10) << tst.raw_energy() << "\t" << std::setw(5) << numberOfHitsInTS << "\t" */
-    /*                            << std::setw(12) << numberOfNoiseHitsInTS << "\t" << std::setw(22) */
-    /*                            << maxCPId_byNumberOfHits << "\t" << std::setw(8) << maxCPNumberOfHitsInTS << "\t" */
-    /*                            << std::setw(16) << maxCPId_byEnergy << "\t" << std::setw(23) << maxEnergySharedTSandCP */
-    /*                            << "\t" << std::setw(22) << totalCPEnergyFromLayerCP << "\t" << std::setw(22) */
-    /*                            << energyFractionOfTSinCP << "\t" << std::setw(25) << energyFractionOfCPinTS */
-    /*                            << std::endl; */
-
-  }  // end of loop through Tracksters
+    }  // end of loop through Tracksters
 
   
-  // Loop through Tracksters
-  for (unsigned int tstId = 0; tstId < nTracksters; ++tstId) {
-    const auto& tst = tracksters[tstId];
-    if (tst.vertices().empty())
-      continue;
+    // Loop through Tracksters
+    for (unsigned int tstId = 0; tstId < nTracksters; ++tstId) {
+      const auto& tst = tracksters[tstId];
+      if (tst.vertices().empty())
+	continue;
 
-    // find the unique SimTrackster ids contributing to the Trackster
-    //stsInTrackster[trackster][STSids]
-    std::sort(stsInTrackster[tstId].begin(), stsInTrackster[tstId].end());
-    const auto last = std::unique(stsInTrackster[tstId].begin(), stsInTrackster[tstId].end());
-    stsInTrackster[tstId].erase(last, stsInTrackster[tstId].end());
+      // find the unique SimTrackster ids contributing to the Trackster
+      //stsInTrackster[trackster][STSids]
+      std::sort(stsInTrackster[tstId].begin(), stsInTrackster[tstId].end());
+      const auto last = std::unique(stsInTrackster[tstId].begin(), stsInTrackster[tstId].end());
+      stsInTrackster[tstId].erase(last, stsInTrackster[tstId].end());
 
-    if (tst.raw_energy() == 0. && !stsInTrackster[tstId].empty()) {
-      //Loop through all SimTracksters contributing to Trackster tstId
-      for (auto& stsPair : stsInTrackster[tstId]) {
-        // In case of a Trackster with zero energy but related SimTracksters the score is set to 1
-        stsPair.second = 1.;
-        /* std::cout << "Trackster Id:\t" << tstId << "\tSimTrackster id:\t" << stsPair.first */
-        /*                            << "\tscore\t" << stsPair.second << std::endl; */
-      }
-      continue;
-    }
-
-    const auto tst_hitsAndFractions = apply_LCMultiplicity(tst, layerClusters);
-
-    // Compute the correct normalization
-    float tracksterEnergy = 0.f, invTracksterEnergyWeight = 0.f;
-    for (const auto& haf : tst_hitsAndFractions) {
-      float hitFr = 0.f;
-      if (i == 0) {
-        hitFr = haf.second;
-      } else {
-        const auto lcId = getLCId(tst.vertices(), layerClusters, haf.first);
-        const auto iLC = std::find(tst.vertices().begin(), tst.vertices().end(), lcId);
-        hitFr = 1.f / tst.vertex_multiplicity(std::distance(std::begin(tst.vertices()), iLC));
-      }
-      tracksterEnergy += hitFr * hitMap.at(haf.first)->energy();
-      invTracksterEnergyWeight += pow(hitFr * hitMap.at(haf.first)->energy(), 2);
-    }
-    if (invTracksterEnergyWeight)
-      invTracksterEnergyWeight = 1.f / invTracksterEnergyWeight;
-
-    for (const auto& haf : tst_hitsAndFractions) {
-      const auto rh_detid = haf.first;
-      unsigned int elemId = 0;
-      float rhFraction = 0.f;
-      if (i == 0) {
-        elemId = rh_detid.rawId();
-        rhFraction = haf.second;
-      } else {
-        const auto lcId = getLCId(tst.vertices(), layerClusters, rh_detid);
-        elemId = lcId;
-        const auto iLC = std::find(tst.vertices().begin(), tst.vertices().end(), lcId);
-        rhFraction = 1.f / tst.vertex_multiplicity(std::distance(std::begin(tst.vertices()), iLC));
+      if (tst.raw_energy() == 0. && !stsInTrackster[tstId].empty()) {
+	//Loop through all SimTracksters contributing to Trackster tstId
+	for (auto& stsPair : stsInTrackster[tstId]) {
+	  // In case of a Trackster with zero energy but related SimTracksters the score is set to 1
+	  stsPair.second = 1.;
+	  /* std::cout << "Trackster Id:\t" << tstId << "\tSimTrackster id:\t" << stsPair.first */
+	  /*                            << "\tscore\t" << stsPair.second << std::endl; */
+	}
+	continue;
       }
 
-      bool hitWithNoSTS = false;
-      if (detIdSimTSId_Map.find(elemId) == detIdSimTSId_Map.end())
-        hitWithNoSTS = true;
-      const HGCRecHit* hit = hitMap.find(rh_detid)->second;
-      const auto hitEnergyWeight = pow(hit->energy(), 2);
+      const auto tst_hitsAndFractions = apply_LCMultiplicity(tst, layerClusters);
 
-      for (auto& stsPair : stsInTrackster[tstId]) {
-        float cpFraction = 0.f;
-        if (!hitWithNoSTS) {
-          const auto& findSTSIt = std::find(
-              detIdSimTSId_Map[elemId].begin(),
-              detIdSimTSId_Map[elemId].end(),
-              detIdInfoInCluster{
-                  stsPair.first, 0.f});  // only the first element is used for the matching (overloaded operator==)
-          if (findSTSIt != detIdSimTSId_Map[elemId].end())
-            cpFraction = findSTSIt->fraction;
-        }
-        if (stsPair.second == FLT_MAX) {
-          stsPair.second = 0.f;
-        }
-        stsPair.second +=
-	  std::min(pow(rhFraction - cpFraction, 2), pow(rhFraction, 2)) * hitEnergyWeight * invTracksterEnergyWeight;
+      // Compute the correct normalization
+      float tracksterEnergy = 0.f, invTracksterEnergyWeight = 0.f;
+      for (const auto& haf : tst_hitsAndFractions) {
+	float hitFr = 0.f;
+	if (i == 0) {
+	  hitFr = haf.second;
+	} else {
+	  const auto lcId = getLCId(tst.vertices(), layerClusters, haf.first);
+	  const auto iLC = std::find(tst.vertices().begin(), tst.vertices().end(), lcId);
+	  hitFr = 1.f / tst.vertex_multiplicity(std::distance(std::begin(tst.vertices()), iLC));
+	}
+	tracksterEnergy += hitFr * hitMap.at(haf.first)->energy();
+	invTracksterEnergyWeight += pow(hitFr * hitMap.at(haf.first)->energy(), 2);
       }
-    }  // end of loop through trackster rechits
+      if (invTracksterEnergyWeight)
+	invTracksterEnergyWeight = 1.f / invTracksterEnergyWeight;
 
-    //In case of a Trackster with some energy but none related CaloParticles print some info.
-    if (stsInTrackster[tstId].empty())
-      std::cout << "Trackster Id: " << tstId << "\tSimTrackster id: -1"
-                                 << "\tscore: -1\n";
+      for (const auto& haf : tst_hitsAndFractions) {
+	const auto rh_detid = haf.first;
+	unsigned int elemId = 0;
+	float rhFraction = 0.f;
+	if (i == 0) {
+	  elemId = rh_detid.rawId();
+	  rhFraction = haf.second;
+	} else {
+	  const auto lcId = getLCId(tst.vertices(), layerClusters, rh_detid);
+	  elemId = lcId;
+	  const auto iLC = std::find(tst.vertices().begin(), tst.vertices().end(), lcId);
+	  rhFraction = 1.f / tst.vertex_multiplicity(std::distance(std::begin(tst.vertices()), iLC));
+	}
 
-    tracksters_FakeMerge[tstId] =
+	bool hitWithNoSTS = false;
+	if (detIdSimTSId_Map.find(elemId) == detIdSimTSId_Map.end())
+	  hitWithNoSTS = true;
+	const HGCRecHit* hit = hitMap.find(rh_detid)->second;
+	const auto hitEnergyWeight = pow(hit->energy(), 2);
+
+	for (auto& stsPair : stsInTrackster[tstId]) {
+	  float cpFraction = 0.f;
+	  if (!hitWithNoSTS) {
+	    const auto& findSTSIt = std::find(
+					      detIdSimTSId_Map[elemId].begin(),
+					      detIdSimTSId_Map[elemId].end(),
+					      detIdInfoInCluster{
+						stsPair.first, 0.f});  // only the first element is used for the matching (overloaded operator==)
+	    if (findSTSIt != detIdSimTSId_Map[elemId].end())
+	      cpFraction = findSTSIt->fraction;
+	  }
+	  if (stsPair.second == FLT_MAX) {
+	    stsPair.second = 0.f;
+	  }
+	  stsPair.second +=
+	    std::min(pow(rhFraction - cpFraction, 2), pow(rhFraction, 2)) * hitEnergyWeight * invTracksterEnergyWeight;
+	}
+      }  // end of loop through trackster rechits
+
+      //In case of a Trackster with some energy but none related CaloParticles print some info.
+      if (stsInTrackster[tstId].empty())
+	std::cout << "Trackster Id: " << tstId << "\tSimTrackster id: -1"
+		  << "\tscore: -1\n";
+
+      tracksters_FakeMerge[tstId] =
         std::count_if(std::begin(stsInTrackster[tstId]),
                       std::end(stsInTrackster[tstId]),
                       [ScoreCutTStoSTSFakeMerge](const auto& obj) { return obj.second < ScoreCutTStoSTSFakeMerge; });
 
-    const auto score = std::min_element(std::begin(stsInTrackster[tstId]),
-                                        std::end(stsInTrackster[tstId]),
-                                        [](const auto& obj1, const auto& obj2) { return obj1.second < obj2.second; });
-    float score2 = -1;
-    float sharedEneFrac2 = 0;
+      const auto score = std::min_element(std::begin(stsInTrackster[tstId]),
+					  std::end(stsInTrackster[tstId]),
+					  [](const auto& obj1, const auto& obj2) { return obj1.second < obj2.second; });
+      float score2 = -1;
+      float sharedEneFrac2 = 0;
 
-    //Getting ready to save info for all related simtrackster. 
-    std::vector<unsigned int> tmp_trackster_cpId;
-    std::vector<unsigned int> tmp_trackster_scId;
-    std::vector<unsigned int> tmp_trackster_id;
-    std::vector<unsigned int> tmp_trackster_numofvertices;
-    std::vector<float> tmp_trackster_score_trackster2caloparticle;
-    std::vector<float> tmp_trackster_sharedenergy_trackster2caloparticle;
-    std::vector<float> tmp_trackster_score_trackster2bestCaloparticle;
-    std::vector<float> tmp_trackster_sharedenergy_trackster2bestCaloparticle;
-    std::vector<float> tmp_trackster_trackster2bestCaloparticle_eta;
-    std::vector<float> tmp_trackster_trackster2bestCaloparticle_phi;
-    std::vector<float> tmp_trackster_score_trackster2bestCaloparticle2;
-    std::vector<float> tmp_trackster_sharedenergy_trackster2bestCaloparticle2;
-    tmp_trackster_cpId.clear();
-    tmp_trackster_scId.clear();
-    tmp_trackster_id.clear();
-    tmp_trackster_numofvertices.clear();
-    tmp_trackster_score_trackster2caloparticle.clear();
-    tmp_trackster_sharedenergy_trackster2caloparticle.clear();
-    tmp_trackster_score_trackster2bestCaloparticle.clear();
-    tmp_trackster_sharedenergy_trackster2bestCaloparticle.clear();
-    tmp_trackster_trackster2bestCaloparticle_eta.clear();
-    tmp_trackster_trackster2bestCaloparticle_phi.clear();
-    tmp_trackster_score_trackster2bestCaloparticle2.clear();
-    tmp_trackster_sharedenergy_trackster2bestCaloparticle2.clear();
-    //Also the per Trackster output above we want to save it per simtrackster
-    //to end up with a single dataframe.
-    std::vector<float> tmp_tmp_trackster_raw_energy;
-    std::vector<unsigned int> tmp_tmp_trackster_numberOfHitsInTS;
-    std::vector<unsigned int> tmp_tmp_trackster_numberOfNoiseHitsInTS;
-    std::vector<int> tmp_tmp_trackster_maxCPId_byNumberOfHits;
-    std::vector<unsigned int> tmp_tmp_trackster_maxCPNumberOfHitsInTS;
-    std::vector<int> tmp_tmp_trackster_maxCPId_byEnergy;
-    std::vector<float> tmp_tmp_trackster_maxEnergySharedTSandCP;
-    std::vector<float> tmp_tmp_trackster_totalCPEnergyFromLayerCP;
-    std::vector<float> tmp_tmp_trackster_energyFractionOfTSinCP;
-    std::vector<float> tmp_tmp_trackster_energyFractionOfCPinTS;
-    tmp_tmp_trackster_raw_energy.clear();
-    tmp_tmp_trackster_numberOfHitsInTS.clear();
-    tmp_tmp_trackster_numberOfNoiseHitsInTS.clear();
-    tmp_tmp_trackster_maxCPId_byNumberOfHits.clear();
-    tmp_tmp_trackster_maxCPNumberOfHitsInTS.clear();
-    tmp_tmp_trackster_maxCPId_byEnergy.clear();
-    tmp_tmp_trackster_maxEnergySharedTSandCP.clear();
-    tmp_tmp_trackster_totalCPEnergyFromLayerCP.clear();
-    tmp_tmp_trackster_energyFractionOfTSinCP.clear();
-    tmp_tmp_trackster_energyFractionOfCPinTS.clear();
+      //Getting ready to save info for all related simtrackster. 
+      std::vector<unsigned int> tmp_trackster_cpId;
+      std::vector<unsigned int> tmp_trackster_scId;
+      std::vector<unsigned int> tmp_trackster_id;
+      std::vector<unsigned int> tmp_trackster_numofvertices;
+      std::vector<float> tmp_trackster_score_trackster2caloparticle;
+      std::vector<float> tmp_trackster_sharedenergy_trackster2caloparticle;
+      std::vector<float> tmp_trackster_score_trackster2bestCaloparticle;
+      std::vector<float> tmp_trackster_sharedenergy_trackster2bestCaloparticle;
+      std::vector<float> tmp_trackster_trackster2bestCaloparticle_eta;
+      std::vector<float> tmp_trackster_trackster2bestCaloparticle_phi;
+      std::vector<float> tmp_trackster_score_trackster2bestCaloparticle2;
+      std::vector<float> tmp_trackster_sharedenergy_trackster2bestCaloparticle2;
+      tmp_trackster_cpId.clear();
+      tmp_trackster_scId.clear();
+      tmp_trackster_id.clear();
+      tmp_trackster_numofvertices.clear();
+      tmp_trackster_score_trackster2caloparticle.clear();
+      tmp_trackster_sharedenergy_trackster2caloparticle.clear();
+      tmp_trackster_score_trackster2bestCaloparticle.clear();
+      tmp_trackster_sharedenergy_trackster2bestCaloparticle.clear();
+      tmp_trackster_trackster2bestCaloparticle_eta.clear();
+      tmp_trackster_trackster2bestCaloparticle_phi.clear();
+      tmp_trackster_score_trackster2bestCaloparticle2.clear();
+      tmp_trackster_sharedenergy_trackster2bestCaloparticle2.clear();
+      //Also the per Trackster output above we want to save it per simtrackster
+      //to end up with a single dataframe.
+      std::vector<float> tmp_tmp_trackster_raw_energy;
+      std::vector<unsigned int> tmp_tmp_trackster_numberOfHitsInTS;
+      std::vector<unsigned int> tmp_tmp_trackster_numberOfNoiseHitsInTS;
+      std::vector<int> tmp_tmp_trackster_maxCPId_byNumberOfHits;
+      std::vector<unsigned int> tmp_tmp_trackster_maxCPNumberOfHitsInTS;
+      std::vector<int> tmp_tmp_trackster_maxCPId_byEnergy;
+      std::vector<float> tmp_tmp_trackster_maxEnergySharedTSandCP;
+      std::vector<float> tmp_tmp_trackster_totalCPEnergyFromLayerCP;
+      std::vector<float> tmp_tmp_trackster_energyFractionOfTSinCP;
+      std::vector<float> tmp_tmp_trackster_energyFractionOfCPinTS;
+      tmp_tmp_trackster_raw_energy.clear();
+      tmp_tmp_trackster_numberOfHitsInTS.clear();
+      tmp_tmp_trackster_numberOfNoiseHitsInTS.clear();
+      tmp_tmp_trackster_maxCPId_byNumberOfHits.clear();
+      tmp_tmp_trackster_maxCPNumberOfHitsInTS.clear();
+      tmp_tmp_trackster_maxCPId_byEnergy.clear();
+      tmp_tmp_trackster_maxEnergySharedTSandCP.clear();
+      tmp_tmp_trackster_totalCPEnergyFromLayerCP.clear();
+      tmp_tmp_trackster_energyFractionOfTSinCP.clear();
+      tmp_tmp_trackster_energyFractionOfCPinTS.clear();
 
     
-    for (const auto& stsPair : stsInTrackster[tstId]) {
-      const auto iSTS = stsPair.first;
-      const auto iScore = stsPair.second;
-      const auto cpId = getCPId(simTSs[iSTS], iSTS, cPHandle_id, cpToSc_SimTrackstersMap, simTSs_fromCP);
-      //if (std::find(cPIndices.begin(), cPIndices.end(), cpId) == cPIndices.end())
-      //  continue;
-      auto iSim = simTSs[iSTS].seedIndex();
-      if (simTSs[iSTS].seedID() == cPHandle_id)  // SimTrackster from CaloParticle
-        iSim = 0;
-      const auto& simOnLayer = (i == 0) ? cPOnLayer[cpId] : sCOnLayer[cpId][iSim];
+      for (const auto& stsPair : stsInTrackster[tstId]) {
+	const auto iSTS = stsPair.first;
+	const auto iScore = stsPair.second;
+	const auto cpId = getCPId(simTSs[iSTS], iSTS, cPHandle_id, cpToSc_SimTrackstersMap, simTSs_fromCP);
+	//if (std::find(cPIndices.begin(), cPIndices.end(), cpId) == cPIndices.end())
+	//  continue;
+	auto iSim = simTSs[iSTS].seedIndex();
+	if (simTSs[iSTS].seedID() == cPHandle_id)  // SimTrackster from CaloParticle
+	  iSim = 0;
+	const auto& simOnLayer = (i == 0) ? cPOnLayer[cpId] : sCOnLayer[cpId][iSim];
 
-      float sharedeneCPallLayers = 0.;
-      //for (unsigned int j = 0; j < layers * 2; ++j)
-      sharedeneCPallLayers += simOnLayer.layerClusterIdToEnergyAndScore.count(tstId)
-                                  ? simOnLayer.layerClusterIdToEnergyAndScore.at(tstId).first
-                                  : 0;
-      if (tracksterEnergy == 0)
-        continue;
-      const auto sharedEneFrac = sharedeneCPallLayers / tracksterEnergy;
-      /* std::cout << "\nTrackster id: " << tstId << " (" << tst.vertices().size() << " vertices)" */
-      /*                            << "\tSimTrackster Id: " << iSTS << " (" << simTSs[iSTS].vertices().size() */
-      /*                            << " vertices)" */
-      /*                            << " (CP id: " << cpId << ")\tscore: " << iScore */
-      /*                            << "\tsharedeneCPallLayers: " << sharedeneCPallLayers << std::endl; */
-      tmp_trackster_cpId.push_back(cpId);
-      tmp_trackster_scId.push_back(iSim);
-      tmp_trackster_id.push_back(tstId);
-      tmp_trackster_numofvertices.push_back(tst.vertices().size());
+	float sharedeneCPallLayers = 0.;
+	//for (unsigned int j = 0; j < layers * 2; ++j)
+	sharedeneCPallLayers += simOnLayer.layerClusterIdToEnergyAndScore.count(tstId)
+	  ? simOnLayer.layerClusterIdToEnergyAndScore.at(tstId).first
+	  : 0;
+	if (tracksterEnergy == 0)
+	  continue;
+	const auto sharedEneFrac = sharedeneCPallLayers / tracksterEnergy;
+	/* std::cout << "\nTrackster id: " << tstId << " (" << tst.vertices().size() << " vertices)" */
+	/*                            << "\tSimTrackster Id: " << iSTS << " (" << simTSs[iSTS].vertices().size() */
+	/*                            << " vertices)" */
+	/*                            << " (CP id: " << cpId << ")\tscore: " << iScore */
+	/*                            << "\tsharedeneCPallLayers: " << sharedeneCPallLayers << std::endl; */
+	tmp_trackster_cpId.push_back(cpId);
+	tmp_trackster_scId.push_back(iSim);
+	tmp_trackster_id.push_back(tstId);
+	tmp_trackster_numofvertices.push_back(tst.vertices().size());
 
-      tmp_tmp_trackster_raw_energy.push_back(tmp_trackster_raw_energy[tstId]);
-      tmp_tmp_trackster_numberOfHitsInTS.push_back(tmp_trackster_numberOfHitsInTS[tstId]);
-      tmp_tmp_trackster_numberOfNoiseHitsInTS.push_back(tmp_trackster_numberOfNoiseHitsInTS[tstId]);
-      tmp_tmp_trackster_maxCPId_byNumberOfHits.push_back(tmp_trackster_maxCPId_byNumberOfHits[tstId]);
-      tmp_tmp_trackster_maxCPNumberOfHitsInTS.push_back(tmp_trackster_maxCPNumberOfHitsInTS[tstId]);
-      tmp_tmp_trackster_maxCPId_byEnergy.push_back(tmp_trackster_maxCPId_byEnergy[tstId]);
-      tmp_tmp_trackster_maxEnergySharedTSandCP.push_back(tmp_trackster_maxEnergySharedTSandCP[tstId]);
-      tmp_tmp_trackster_totalCPEnergyFromLayerCP.push_back(tmp_trackster_totalCPEnergyFromLayerCP[tstId]);
-      tmp_tmp_trackster_energyFractionOfTSinCP.push_back(tmp_trackster_energyFractionOfTSinCP[tstId]);
-      tmp_tmp_trackster_energyFractionOfCPinTS.push_back(tmp_trackster_energyFractionOfCPinTS[tstId]);
+	tmp_tmp_trackster_raw_energy.push_back(tmp_trackster_raw_energy[tstId]);
+	tmp_tmp_trackster_numberOfHitsInTS.push_back(tmp_trackster_numberOfHitsInTS[tstId]);
+	tmp_tmp_trackster_numberOfNoiseHitsInTS.push_back(tmp_trackster_numberOfNoiseHitsInTS[tstId]);
+	tmp_tmp_trackster_maxCPId_byNumberOfHits.push_back(tmp_trackster_maxCPId_byNumberOfHits[tstId]);
+	tmp_tmp_trackster_maxCPNumberOfHitsInTS.push_back(tmp_trackster_maxCPNumberOfHitsInTS[tstId]);
+	tmp_tmp_trackster_maxCPId_byEnergy.push_back(tmp_trackster_maxCPId_byEnergy[tstId]);
+	tmp_tmp_trackster_maxEnergySharedTSandCP.push_back(tmp_trackster_maxEnergySharedTSandCP[tstId]);
+	tmp_tmp_trackster_totalCPEnergyFromLayerCP.push_back(tmp_trackster_totalCPEnergyFromLayerCP[tstId]);
+	tmp_tmp_trackster_energyFractionOfTSinCP.push_back(tmp_trackster_energyFractionOfTSinCP[tstId]);
+	tmp_tmp_trackster_energyFractionOfCPinTS.push_back(tmp_trackster_energyFractionOfCPinTS[tstId]);
 
-      tmp_trackster_score_trackster2caloparticle.push_back(iScore);
-      tmp_trackster_sharedenergy_trackster2caloparticle.push_back(sharedEneFrac);
+	tmp_trackster_score_trackster2caloparticle.push_back(iScore);
+	tmp_trackster_sharedenergy_trackster2caloparticle.push_back(sharedEneFrac);
  
-      if (iSTS == score->first) {
+	if (iSTS == score->first) {
 
-	tmp_trackster_score_trackster2bestCaloparticle.push_back(iScore);
-	tmp_trackster_sharedenergy_trackster2bestCaloparticle.push_back(sharedEneFrac);
-	tmp_trackster_trackster2bestCaloparticle_eta.push_back(tst.barycenter().eta());
-	tmp_trackster_trackster2bestCaloparticle_phi.push_back(tst.barycenter().phi());
+	  tmp_trackster_score_trackster2bestCaloparticle.push_back(iScore);
+	  tmp_trackster_sharedenergy_trackster2bestCaloparticle.push_back(sharedEneFrac);
+	  tmp_trackster_trackster2bestCaloparticle_eta.push_back(tst.barycenter().eta());
+	  tmp_trackster_trackster2bestCaloparticle_phi.push_back(tst.barycenter().phi());
 
-      } else if (score2 < 0 || iScore < score2) {
-        score2 = iScore;
-        sharedEneFrac2 = sharedEneFrac;
-      }
-    }  // end of loop through SimTracksters associated to Trackster
-    if (score2 > -1) {
+	} else if (score2 < 0 || iScore < score2) {
+	  score2 = iScore;
+	  sharedEneFrac2 = sharedEneFrac;
+	}
+      }  // end of loop through SimTracksters associated to Trackster
+      if (score2 > -1) {
 
-      tmp_trackster_score_trackster2bestCaloparticle2.push_back(score2);
-      tmp_trackster_sharedenergy_trackster2bestCaloparticle2.push_back(sharedEneFrac2);
+	tmp_trackster_score_trackster2bestCaloparticle2.push_back(score2);
+	tmp_trackster_sharedenergy_trackster2bestCaloparticle2.push_back(sharedEneFrac2);
        
+      }
+
+      trInfo.trackster_cpId.push_back(tmp_trackster_cpId);
+      trInfo.trackster_scId.push_back(tmp_trackster_scId);
+      trInfo.trackster_Id.push_back(tmp_trackster_id);
+      trInfo.trackster_numofvertices.push_back(tmp_trackster_numofvertices);
+    
+      trInfo.trackster_score_trackster2caloparticle.push_back(tmp_trackster_score_trackster2caloparticle);
+      trInfo.trackster_sharedenergy_trackster2caloparticle.push_back(tmp_trackster_sharedenergy_trackster2caloparticle);
+      trInfo.trackster_score_trackster2bestCaloparticle.push_back(tmp_trackster_score_trackster2bestCaloparticle);
+      trInfo.trackster_sharedenergy_trackster2bestCaloparticle.push_back(tmp_trackster_sharedenergy_trackster2bestCaloparticle);
+      trInfo.trackster_trackster2bestCaloparticle_eta.push_back(tmp_trackster_trackster2bestCaloparticle_eta);
+      trInfo.trackster_trackster2bestCaloparticle_phi.push_back(tmp_trackster_trackster2bestCaloparticle_phi);
+      trInfo.trackster_score_trackster2bestCaloparticle2.push_back(tmp_trackster_score_trackster2bestCaloparticle2);
+      trInfo.trackster_sharedenergy_trackster2bestCaloparticle2.push_back(tmp_trackster_sharedenergy_trackster2bestCaloparticle2);
+      trInfo.trackster_Raw_Energy.push_back(tmp_tmp_trackster_raw_energy);
+      trInfo.trackster_numberOfHitsInTS.push_back(tmp_tmp_trackster_numberOfHitsInTS);
+      trInfo.trackster_numberOfNoiseHitsInTS.push_back(tmp_tmp_trackster_numberOfNoiseHitsInTS);
+      trInfo.trackster_maxCPId_byNumberOfHits.push_back(tmp_tmp_trackster_maxCPId_byNumberOfHits);
+      trInfo.trackster_maxCPNumberOfHitsInTS.push_back(tmp_tmp_trackster_maxCPNumberOfHitsInTS);
+      trInfo.trackster_maxCPId_byEnergy.push_back(tmp_tmp_trackster_maxCPId_byEnergy);
+      trInfo.trackster_maxEnergySharedTSandCP.push_back(tmp_tmp_trackster_maxEnergySharedTSandCP);
+      trInfo.trackster_totalCPEnergyFromLayerCP.push_back(tmp_tmp_trackster_totalCPEnergyFromLayerCP);
+      trInfo.trackster_energyFractionOfTSinCP.push_back(tmp_tmp_trackster_energyFractionOfTSinCP);
+      trInfo.trackster_energyFractionOfCPinTS.push_back(tmp_tmp_trackster_energyFractionOfCPinTS);
+
+    
+    }  // end of loop through Tracksters
+
+    std::unordered_map<unsigned int, std::vector<float>> score3d;
+    std::unordered_map<unsigned int, std::vector<float>> tstSharedEnergy;
+
+    for (unsigned int iSTS = 0; iSTS < nSimTracksters; ++iSTS) {
+      score3d[iSTS].resize(nTracksters);
+      tstSharedEnergy[iSTS].resize(nTracksters);
+      for (unsigned int j = 0; j < nTracksters; ++j) {
+	score3d[iSTS][j] = FLT_MAX;
+	tstSharedEnergy[iSTS][j] = 0.f;
+      }
     }
 
-    trInfo.trackster_cpId.push_back(tmp_trackster_cpId);
-    trInfo.trackster_scId.push_back(tmp_trackster_scId);
-    trInfo.trackster_Id.push_back(tmp_trackster_id);
-    trInfo.trackster_numofvertices.push_back(tmp_trackster_numofvertices);
-    
-    trInfo.trackster_score_trackster2caloparticle.push_back(tmp_trackster_score_trackster2caloparticle);
-    trInfo.trackster_sharedenergy_trackster2caloparticle.push_back(tmp_trackster_sharedenergy_trackster2caloparticle);
-    trInfo.trackster_score_trackster2bestCaloparticle.push_back(tmp_trackster_score_trackster2bestCaloparticle);
-    trInfo.trackster_sharedenergy_trackster2bestCaloparticle.push_back(tmp_trackster_sharedenergy_trackster2bestCaloparticle);
-    trInfo.trackster_trackster2bestCaloparticle_eta.push_back(tmp_trackster_trackster2bestCaloparticle_eta);
-    trInfo.trackster_trackster2bestCaloparticle_phi.push_back(tmp_trackster_trackster2bestCaloparticle_phi);
-    trInfo.trackster_score_trackster2bestCaloparticle2.push_back(tmp_trackster_score_trackster2bestCaloparticle2);
-    trInfo.trackster_sharedenergy_trackster2bestCaloparticle2.push_back(tmp_trackster_sharedenergy_trackster2bestCaloparticle2);
-    trInfo.trackster_Raw_Energy.push_back(tmp_tmp_trackster_raw_energy);
-    trInfo.trackster_numberOfHitsInTS.push_back(tmp_tmp_trackster_numberOfHitsInTS);
-    trInfo.trackster_numberOfNoiseHitsInTS.push_back(tmp_tmp_trackster_numberOfNoiseHitsInTS);
-    trInfo.trackster_maxCPId_byNumberOfHits.push_back(tmp_tmp_trackster_maxCPId_byNumberOfHits);
-    trInfo.trackster_maxCPNumberOfHitsInTS.push_back(tmp_tmp_trackster_maxCPNumberOfHitsInTS);
-    trInfo.trackster_maxCPId_byEnergy.push_back(tmp_tmp_trackster_maxCPId_byEnergy);
-    trInfo.trackster_maxEnergySharedTSandCP.push_back(tmp_tmp_trackster_maxEnergySharedTSandCP);
-    trInfo.trackster_totalCPEnergyFromLayerCP.push_back(tmp_tmp_trackster_totalCPEnergyFromLayerCP);
-    trInfo.trackster_energyFractionOfTSinCP.push_back(tmp_tmp_trackster_energyFractionOfTSinCP);
-    trInfo.trackster_energyFractionOfCPinTS.push_back(tmp_tmp_trackster_energyFractionOfCPinTS);
+    // Fill the plots to compute the different metrics linked to
+    // gen-level, namely efficiency, purity and duplicate. In this loop should restrict
+    // only to the selected caloParaticles.
+    for (unsigned int iSTS = 0; iSTS < nSimTracksters; ++iSTS) {
+      const auto& sts = simTSs[iSTS];
+      const auto& cpId = getCPId(sts, iSTS, cPHandle_id, cpToSc_SimTrackstersMap, simTSs_fromCP);
+      if (i == 0 && std::find(cPSelectedIndices.begin(), cPSelectedIndices.end(), cpId) == cPSelectedIndices.end())
+	continue;
 
-    
-  }  // end of loop through Tracksters
+      const auto& hafLC = apply_LCMultiplicity(sts, layerClusters);
+      float SimEnergy_LC = 0.f;
+      for (const auto& haf : hafLC) {
+	const auto lcId = getLCId(sts.vertices(), layerClusters, haf.first);
+	const auto iLC = std::find(sts.vertices().begin(), sts.vertices().end(), lcId);
+	SimEnergy_LC +=
+          hitMap.at(haf.first)->energy() / sts.vertex_multiplicity(std::distance(std::begin(sts.vertices()), iLC));
+      }
 
-  
+      auto iSim = sts.seedIndex();
+      if (sts.seedID() == cPHandle_id)  // SimTrackster from CaloParticle
+	iSim = 0;
+      auto& simOnLayer = (i == 0) ? cPOnLayer[cpId] : sCOnLayer[cpId][iSim];
+
+      // Keep the Trackster ids that are related to
+      // SimTrackster under study for the final filling of the score
+      std::set<unsigned int> stsId_tstId_related;
+      auto& score3d_iSTS = score3d[iSTS];
+
+      float SimEnergy = 0.f;
+      float SimEnergyWeight = 0.f, hitsEnergyWeight = 0.f;
+      //for (unsigned int layerId = 0; layerId < 1/*layers * 2*/; ++layerId) {
+      const auto SimNumberOfHits = simOnLayer.hits_and_fractions.size();
+      if (SimNumberOfHits == 0)
+	continue;
+      SimEnergy += simOnLayer.energy;
+      int tstWithMaxEnergyInCP = -1;
+      //This is the maximum energy related to Trackster per layer.
+      float maxEnergyTSperlayerinSim = 0.f;
+      float SimEnergyFractionInTSperlayer = 0.f;
+      //Remember and not confused by name. layerClusterIdToEnergyAndScore contains the Trackster id.
+      for (const auto& tst : simOnLayer.layerClusterIdToEnergyAndScore) {
+	if (tst.second.first > maxEnergyTSperlayerinSim) {
+	  maxEnergyTSperlayerinSim = tst.second.first;
+	  tstWithMaxEnergyInCP = tst.first;
+	}
+      }
+      if (SimEnergy > 0.f)
+	SimEnergyFractionInTSperlayer = maxEnergyTSperlayerinSim / SimEnergy;
+
+      std::cout << std::setw(12) << "caloparticle\t" << std::setw(15) << "cp total energy\t"
+				 << std::setw(15) << "cpEnergyOnLayer\t" << std::setw(14) << "CPNhitsOnLayer\t"
+				 << std::setw(18) << "tstWithMaxEnergyInCP\t" << std::setw(15) << "maxEnergyTSinCP\t"
+				 << std::setw(20) << "CPEnergyFractionInTS"
+				 << "\n";
+      std::cout << std::setw(12) << cpId << "\t" << std::setw(15) << sts.raw_energy() << "\t"
+				 << std::setw(15) << SimEnergy << "\t" << std::setw(14) << SimNumberOfHits << "\t"
+				 << std::setw(18) << tstWithMaxEnergyInCP << "\t" << std::setw(15)
+				 << maxEnergyTSperlayerinSim << "\t" << std::setw(20) << SimEnergyFractionInTSperlayer
+				 << "\n";
+
+      for (const auto& haf : ((i == 0) ? simOnLayer.hits_and_fractions : hafLC)) {
+	const auto& hitDetId = haf.first;
+	// Compute the correct normalization
+	// Need to loop on the simOnLayer data structure since this is the
+	// only one that has the compressed information for multiple usage
+	// of the same DetId by different SimClusters by a single CaloParticle.
+	SimEnergyWeight += pow(haf.second * hitMap.at(hitDetId)->energy(), 2);
+
+	const auto lcId = getLCId(sts.vertices(), layerClusters, hitDetId);
+	float cpFraction = 0.f;
+	if (i == 0) {
+	  cpFraction = haf.second;
+	} else {
+	  const auto iLC = std::find(sts.vertices().begin(), sts.vertices().end(), lcId);
+	  cpFraction = 1.f / sts.vertex_multiplicity(std::distance(std::begin(sts.vertices()), iLC));
+	}
+	if (cpFraction == 0.f)
+	  continue;  // hopefully this should never happen
+
+	bool hitWithNoTS = false;
+	if (detIdToTracksterId_Map.find(hitDetId) == detIdToTracksterId_Map.end())
+	  hitWithNoTS = true;
+	const HGCRecHit* hit = hitMap.find(hitDetId)->second;
+	const auto hitEnergyWeight = pow(hit->energy(), 2);
+	hitsEnergyWeight += pow(cpFraction, 2) * hitEnergyWeight;
+
+	for (auto& tsPair : simOnLayer.layerClusterIdToEnergyAndScore) {
+	  const auto tstId = tsPair.first;
+	  stsId_tstId_related.insert(tstId);
+
+	  float tstFraction = 0.f;
+	  if (!hitWithNoTS) {
+	    const auto findTSIt =
+              std::find(detIdToTracksterId_Map[hitDetId].begin(),
+                        detIdToTracksterId_Map[hitDetId].end(),
+                        detIdInfoInTrackster{
+			  tstId, 0, 0.f});  // only the first element is used for the matching (overloaded operator==)
+	    if (findTSIt != detIdToTracksterId_Map[hitDetId].end()) {
+	      if (i == 0) {
+		tstFraction = findTSIt->fraction;
+	      } else {
+		const auto iLC = std::find(
+					   tracksters[tstId].vertices().begin(), tracksters[tstId].vertices().end(), findTSIt->clusterId);
+		if (iLC != tracksters[tstId].vertices().end()) {
+		  tstFraction = 1.f / tracksters[tstId].vertex_multiplicity(
+									    std::distance(std::begin(tracksters[tstId].vertices()), iLC));
+		}
+	      }
+	    }
+	  }
+	  // Here do not divide as before by the trackster energy weight. Should sum first
+	  // over all layers and divide with the total CP energy over all layers.
+	  if (tsPair.second.second == FLT_MAX) {
+	    tsPair.second.second = 0.f;
+	  }
+	  tsPair.second.second += std::min(pow(tstFraction - cpFraction, 2), pow(cpFraction, 2)) * hitEnergyWeight;
+
+	  std::cout << "\nTracksterId:\t" << tstId << "\tSimTracksterId:\t" << iSTS << "\tcpId:\t"
+				     << cpId << "\ttstfraction, cpfraction:\t" << tstFraction << ", " << cpFraction
+				     << "\thitEnergyWeight:\t" << hitEnergyWeight << "\tadded delta:\t"
+				     << pow((tstFraction - cpFraction), 2) * hitEnergyWeight
+				     << "\tcurrent Sim-score numerator:\t" << tsPair.second.second
+				     << "\tshared Sim energy:\t" << tsPair.second.first << '\n';
+	}
+      }  // end of loop through SimCluster SimHits on current layer
+
+      if (simOnLayer.layerClusterIdToEnergyAndScore.empty())
+	std::cout << "CP Id:\t" << cpId << "\tTS id:\t-1"
+				   << " Sub score in \t -1\n";
+
+      for (const auto& tsPair : simOnLayer.layerClusterIdToEnergyAndScore) {
+	const auto tstId = tsPair.first;
+	// 3D score here without the denominator at this point
+	if (score3d_iSTS[tstId] == FLT_MAX) {
+	  score3d_iSTS[tstId] = 0.f;
+	}
+	score3d_iSTS[tstId] += tsPair.second.second;
+	tstSharedEnergy[iSTS][tstId] += tsPair.second.first;
+      }
+      //} // end of loop through layers
+
+      const auto scoreDenom = (i == 0) ? SimEnergyWeight : hitsEnergyWeight;
+      const auto energyDenom = (i == 0) ? SimEnergy : SimEnergy_LC;
+
+      const auto sts_eta = sts.barycenter().eta();
+      const auto sts_phi = sts.barycenter().phi();
+      const auto sts_en = sts.raw_energy();
+      const auto sts_pt = sts.raw_pt();
+
+      //Loop through related Tracksters here
+      //Getting ready to save info for all related tracksters. 
+      std::vector<unsigned int> tmp_trackster_sts_cpId;
+      std::vector<unsigned int> tmp_trackster_sts_id;
+      std::vector<unsigned int> tmp_trackster_sts_ts_id;
+      std::vector<float> tmp_trackster_sts_SimEnergy;
+      std::vector<float> tmp_trackster_sts_SimEnergyWeight;
+      std::vector<float> tmp_trackster_sts_trackster_raw_energy;
+      std::vector<float> tmp_trackster_sts_score_caloparticle2trackster;
+      std::vector<float> tmp_trackster_sts_sharedenergy_caloparticle2trackster;
+      std::vector<float> tmp_trackster_sts_eta;
+      std::vector<float> tmp_trackster_sts_phi;
+      std::vector<float> tmp_trackster_sts_pt;
+      std::vector<float> tmp_trackster_sts_raw_energy;
+      std::vector<float> tmp_trackster_sts_scorePur_caloparticle2trackster;
+      std::vector<float> tmp_trackster_sts_sharedenergy_caloparticle2trackster_assoc;
+      std::vector<float> tmp_trackster_sts_besttrackster_raw_energy;
+      std::vector<float> tmp_trackster_sts_scoreDupl_caloparticle2trackster;
+      std::vector<float> tmp_trackster_sts_sharedenergy_caloparticle2trackster_assoc2;
+
+      tmp_trackster_sts_cpId.clear();
+      tmp_trackster_sts_id.clear();
+      tmp_trackster_sts_ts_id.clear();
+      tmp_trackster_sts_SimEnergy.clear();
+      tmp_trackster_sts_SimEnergyWeight.clear();
+      tmp_trackster_sts_trackster_raw_energy.clear();
+      tmp_trackster_sts_score_caloparticle2trackster.clear();
+      tmp_trackster_sts_sharedenergy_caloparticle2trackster.clear();
+      tmp_trackster_sts_eta.clear();
+      tmp_trackster_sts_phi.clear();
+      tmp_trackster_sts_pt.clear();
+      tmp_trackster_sts_raw_energy.clear();
+      tmp_trackster_sts_scorePur_caloparticle2trackster.clear();
+      tmp_trackster_sts_sharedenergy_caloparticle2trackster_assoc.clear();
+      tmp_trackster_sts_besttrackster_raw_energy.clear();
+      tmp_trackster_sts_scoreDupl_caloparticle2trackster.clear();
+      tmp_trackster_sts_sharedenergy_caloparticle2trackster_assoc2.clear();
+
+      // In case the threshold to associate a CaloParticle to a Trackster is
+      // below 50%, there could be cases in which the CP is linked to more than
+      // one tracksters, leading to efficiencies >1. This boolean is used to
+      // avoid "over counting".
+      bool cp_considered_efficient = false;
+      bool cp_considered_pure = false;
+      for (const auto tstId : stsId_tstId_related) {
+	// Now time for the denominator
+	score3d_iSTS[tstId] /= scoreDenom;
+	const auto tstSharedEnergyFrac = tstSharedEnergy[iSTS][tstId] / energyDenom;
+	std::cout << "STS id: " << iSTS << "\t(CP id: " << cpId << ")\tTS id: " << tstId
+				   << "\nSimEnergy: " << energyDenom << "\tSimEnergyWeight: " << SimEnergyWeight
+				   << "\tTrackster energy: " << tracksters[tstId].raw_energy()
+				   << "\nscore: " << score3d_iSTS[tstId]
+				   << "\tshared energy: " << tstSharedEnergy[iSTS][tstId]
+				   << "\tshared energy fraction: " << tstSharedEnergyFrac << "\n";
+
+	tmp_trackster_sts_cpId.push_back(cpId);
+	tmp_trackster_sts_id.push_back(iSTS);
+	tmp_trackster_sts_ts_id.push_back(tstId);
+	tmp_trackster_sts_SimEnergy.push_back(energyDenom);
+	tmp_trackster_sts_SimEnergyWeight.push_back(SimEnergyWeight);
+	tmp_trackster_sts_trackster_raw_energy.push_back(tracksters[tstId].raw_energy());
+	tmp_trackster_sts_score_caloparticle2trackster.push_back(score3d_iSTS[tstId]);
+	tmp_trackster_sts_sharedenergy_caloparticle2trackster.push_back(tstSharedEnergyFrac);
+	tmp_trackster_sts_eta.push_back(sts_eta);
+	tmp_trackster_sts_phi.push_back(sts_phi);
+	tmp_trackster_sts_pt.push_back(sts_pt);
+	tmp_trackster_sts_raw_energy.push_back(sts_en);
+
+      }  // end of loop through Tracksters related to SimTrackster
+
+      const auto best = std::min_element(std::begin(score3d_iSTS), std::end(score3d_iSTS));
+      if (best != score3d_iSTS.end()) {
+	const auto bestTstId = std::distance(std::begin(score3d_iSTS), best);
+	const auto bestTstSharedEnergyFrac = tstSharedEnergy[iSTS][bestTstId] / energyDenom;
+
+	tmp_trackster_sts_scorePur_caloparticle2trackster.push_back(*best);
+	tmp_trackster_sts_sharedenergy_caloparticle2trackster_assoc.push_back(bestTstSharedEnergyFrac);
+	tmp_trackster_sts_besttrackster_raw_energy.push_back(tracksters[bestTstId].raw_energy());
+
+	/* std::cout << count << " " << sts_eta << " " << sts_phi << " " */
+	/* 			   << tracksters[bestTstId].raw_energy() << " " << sts.raw_energy() << " " */
+	/* 			   << bestTstSharedEnergyFrac << "\n"; */
+
+	if (score3d_iSTS.size() > 1) {
+	  auto best2 = (best == score3d_iSTS.begin()) ? std::next(best, 1) : score3d_iSTS.begin();
+	  for (auto tstId = score3d_iSTS.begin(); tstId != score3d_iSTS.end() && tstId != best; tstId++)
+	    if (*tstId < *best2)
+	      best2 = tstId;
+	  const auto best2TstId = std::distance(std::begin(score3d_iSTS), best2);
+	  const auto best2TstSharedEnergyFrac = tstSharedEnergy[iSTS][best2TstId] / energyDenom;
+
+	  tmp_trackster_sts_scoreDupl_caloparticle2trackster.push_back(*best2);
+	  tmp_trackster_sts_sharedenergy_caloparticle2trackster_assoc2.push_back(best2TstSharedEnergyFrac);
+
+	}
+      }
+
+      trInfo.trackster_sts_cpId.push_back(tmp_trackster_sts_cpId);
+      trInfo.trackster_sts_id.push_back(tmp_trackster_sts_id);
+      trInfo.trackster_sts_ts_id.push_back(tmp_trackster_sts_ts_id);
+      trInfo.trackster_sts_SimEnergy.push_back(tmp_trackster_sts_SimEnergy);
+      trInfo.trackster_sts_SimEnergyWeight.push_back(tmp_trackster_sts_SimEnergyWeight);
+      trInfo.trackster_sts_trackster_raw_energy.push_back(tmp_trackster_sts_trackster_raw_energy);
+      trInfo.trackster_sts_score_caloparticle2trackster.push_back(tmp_trackster_sts_score_caloparticle2trackster);
+      trInfo.trackster_sts_sharedenergy_caloparticle2trackster.push_back(tmp_trackster_sts_sharedenergy_caloparticle2trackster);
+      trInfo.trackster_sts_eta.push_back(tmp_trackster_sts_eta);
+      trInfo.trackster_sts_phi.push_back(tmp_trackster_sts_phi);
+      trInfo.trackster_sts_pt.push_back(tmp_trackster_sts_pt);
+      trInfo.trackster_sts_raw_energy.push_back(tmp_trackster_sts_raw_energy);
+      trInfo.trackster_sts_scorePur_caloparticle2trackster.push_back(tmp_trackster_sts_scorePur_caloparticle2trackster);
+      trInfo.trackster_sts_sharedenergy_caloparticle2trackster_assoc.push_back(tmp_trackster_sts_sharedenergy_caloparticle2trackster_assoc);
+      trInfo.trackster_sts_besttrackster_raw_energy.push_back(tmp_trackster_sts_besttrackster_raw_energy);
+      trInfo.trackster_sts_scoreDupl_caloparticle2trackster.push_back(tmp_trackster_sts_scoreDupl_caloparticle2trackster);
+      trInfo.trackster_sts_sharedenergy_caloparticle2trackster_assoc2.push_back(tmp_trackster_sts_sharedenergy_caloparticle2trackster_assoc2);
+
+      
+    }  // end of loop through SimTracksters
+
 
   
   } // end of prepare_tracksters_to_SimTracksters
