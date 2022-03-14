@@ -2450,19 +2450,19 @@ namespace hgcal_validation
       if (SimNumberOfHits == 0)
 	continue;
       SimEnergy += simOnLayer.energy;
-      int tstWithMaxEnergyInCP = -1;
+      //int tstWithMaxEnergyInCP = -1;
       //This is the maximum energy related to Trackster per layer.
-      float maxEnergyTSperlayerinSim = 0.f;
-      float SimEnergyFractionInTSperlayer = 0.f;
+      //float maxEnergyTSperlayerinSim = 0.f;
+      //float SimEnergyFractionInTSperlayer = 0.f;
       //Remember and not confused by name. layerClusterIdToEnergyAndScore contains the Trackster id.
-      for (const auto& tst : simOnLayer.layerClusterIdToEnergyAndScore) {
-	if (tst.second.first > maxEnergyTSperlayerinSim) {
-	  maxEnergyTSperlayerinSim = tst.second.first;
-	  tstWithMaxEnergyInCP = tst.first;
-	}
-      }
-      if (SimEnergy > 0.f)
-	SimEnergyFractionInTSperlayer = maxEnergyTSperlayerinSim / SimEnergy;
+      //for (const auto& tst : simOnLayer.layerClusterIdToEnergyAndScore) {
+	//if (tst.second.first > maxEnergyTSperlayerinSim) {
+	//  maxEnergyTSperlayerinSim = tst.second.first;
+	  //tstWithMaxEnergyInCP = tst.first;
+	//}
+      //}
+      //if (SimEnergy > 0.f)
+	//SimEnergyFractionInTSperlayer = maxEnergyTSperlayerinSim / SimEnergy;
 
       /* std::cout << std::setw(12) << "caloparticle\t" << std::setw(15) << "cp total energy\t" */
       /* 				 << std::setw(15) << "cpEnergyOnLayer\t" << std::setw(14) << "CPNhitsOnLayer\t" */
