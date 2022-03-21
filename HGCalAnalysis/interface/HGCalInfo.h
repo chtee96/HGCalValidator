@@ -477,7 +477,8 @@ namespace hgcal_validation
 			   std::vector<SimCluster> const& simClusters,
 			   std::unordered_map<DetId, const HGCRecHit*> const& hitMap,
 			   std::shared_ptr<hgcal::RecHitTools> recHitTools, 
-			   unsigned int layers){
+			   unsigned int layers,
+			   std::map<double, double> cummatbudg){
 
 
     std::vector<uint32_t> hits;
@@ -684,6 +685,7 @@ namespace hgcal_validation
     std::vector<int> layerCluster_layer;
     std::vector<int> layerCluster_nhitCore;
     std::vector<int> layerCluster_nhitAll;
+    std::vector<float> layerCluster_matbudget;
     std::vector<std::vector<unsigned int>> layerCluster_rechits;
     std::vector<int> layerCluster_rechitSeed;
     std::vector<std::vector<float>> layerCluster_rechit_eta;
@@ -729,6 +731,7 @@ namespace hgcal_validation
     lcInfo.layerCluster_layer.clear();
     lcInfo.layerCluster_nhitCore.clear();
     lcInfo.layerCluster_nhitAll.clear();
+    lcInfo.layerCluster_matbudget.clear();
     lcInfo.layerCluster_rechits.clear();
     lcInfo.layerCluster_rechitSeed.clear();
     lcInfo.layerCluster_rechit_eta.clear();
@@ -773,6 +776,7 @@ namespace hgcal_validation
     fTree->Branch("layerCluster_layer", &lcInfo.layerCluster_layer);
     fTree->Branch("layerCluster_nhitCore", &lcInfo.layerCluster_nhitCore);
     fTree->Branch("layerCluster_nhitAll", &lcInfo.layerCluster_nhitAll);
+    fTree->Branch("layerCluster_matbudget", &lcInfo.layerCluster_matbudget);
     fTree->Branch("layerCluster_rechits", &lcInfo.layerCluster_rechits);
     fTree->Branch("layerCluster_rechitSeed", &lcInfo.layerCluster_rechitSeed);
     fTree->Branch("layerCluster_rechit_eta", &lcInfo.layerCluster_rechit_eta);
@@ -812,7 +816,8 @@ namespace hgcal_validation
 			     std::unordered_map<DetId, std::vector<const HGCUncalibratedRecHit *> > const& UnCalibHitMap,
 			     std::unordered_map<DetId, const HGCRecHit*> const& hitMap,
 			     std::shared_ptr<hgcal::RecHitTools> recHitTools, 
-			     unsigned int layers){
+			     unsigned int layers,
+			     std::map<double, double> cummatbudg){
 
     
     auto nLayerClusters = clusters.size();
@@ -930,6 +935,8 @@ namespace hgcal_validation
       lcInfo.layerCluster_layer.push_back(lcLayerId);
       lcInfo.layerCluster_nhitCore.push_back(ncoreHit);
       lcInfo.layerCluster_nhitAll.push_back(numberOfHitsInLC);
+      //lcLayerId starts from 0, while in the input file we start from 1. 
+      lcInfo.layerCluster_matbudget.push_back(cummatbudg[(double)lcLayerId + 1.]);
       lcInfo.layerCluster_rechitSeed.push_back(rhSeed);
       lcInfo.layerCluster_rechits.push_back(rhIndices);
       lcInfo.layerCluster_rechit_eta.push_back(rhInfo.rechit_eta);
@@ -953,7 +960,6 @@ namespace hgcal_validation
       lcInfo.layerCluster_rechit_radius.push_back(rhInfo.rechit_radius);
       lcInfo.layerCluster_rechit_layerclusterid.push_back(rhInfo.rechit_layerclusterid);
       lcInfo.layerCluster_rechit_tracksterid.push_back(rhInfo.rechit_tracksterid);
-
 
     }//end of loop over layerClusters
 
@@ -1533,7 +1539,8 @@ namespace hgcal_validation
   			  std::unordered_map<DetId, const HGCRecHit*> const& hitMap,
   			  std::shared_ptr<hgcal::RecHitTools> recHitTools,
 			  const bool doEdges, 
-  			  unsigned int layers){
+  			  unsigned int layers,
+			  std::map<double, double> cummatbudg){
 
     const auto nTracksters = tracksters.size();
 
@@ -1558,8 +1565,8 @@ namespace hgcal_validation
 
   	trackster_layers.insert(layerid);
 
-	fillSimClustersInfo(scInfo, rhInfo_sc, simClusters, hitMap, recHitTools, layers);
-	fillLayerClustersInfo(lcInfo, rhInfo_lc, clusters, lcId, tstId, true, UnCalibHitMap, hitMap, recHitTools, layers);
+	fillSimClustersInfo(scInfo, rhInfo_sc, simClusters, hitMap, recHitTools, layers, cummatbudg);
+	fillLayerClustersInfo(lcInfo, rhInfo_lc, clusters, lcId, tstId, true, UnCalibHitMap, hitMap, recHitTools, layers, cummatbudg);
 
       }  // end of loop through layerClusters
 

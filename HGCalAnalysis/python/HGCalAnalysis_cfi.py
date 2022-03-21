@@ -45,13 +45,13 @@ HGCalAnalysis = cms.EDAnalyzer(
     label_SimClusters = cms.InputTag("SimClusters"),
     label_SimClustersLevel = cms.InputTag("ClusterLevel"),
     #Layer Cluster tree
-    doLayerClustersTree = cms.untracked.bool(False),
+    doLayerClustersTree = cms.untracked.bool(True),
     label_layerClusterPlots = cms.InputTag("hgcalLayerClusters"),
     label_LCToCPLinking = cms.InputTag("LCToCP_association"),
     #Select caloParticles for efficiency or pass through
     doCaloParticleSelection = cms.untracked.bool(True),
     #Trackster and SimTrakcsters trees
-    doTrackstersPlots = cms.untracked.bool(True),
+    doTrackstersPlots = cms.untracked.bool(False),
     doOnlyTrackstersMerge = cms.untracked.bool(True),
     doEdges = cms.untracked.bool(False),
     label_TS = cms.InputTag("Morphology"),
@@ -71,6 +71,10 @@ HGCalAnalysis = cms.EDAnalyzer(
     #Total number of layers of HGCal that we want to monitor
     #Could get this also from HGCalImagingAlgo::maxlayer but better to get it from here
     totallayers_to_monitor = cms.int32(52),
+    #The cumulative material budget in front of each layer. To be more specific, it
+    #is the material budget just in front of the active material (not including it).
+    #This file is created using the official material budget code.
+    cummatbudinxo = cms.FileInPath('HGCalValidator/HGCalAnalysis/data/D88.cumulative.xo'),    
     trees = cms.untracked.vstring(["RecHitsRawFromHitMap","SimClusters","CaloParticles","LayerClusters","ticlTrackstersTrkEM","ticlTrackstersEM","ticlTrackstersTrk","ticlTrackstersHAD","ticlTrackstersMerge","ticlSimTracksters_fromCPs","ticlSimTracksters"]),
     createTree = cms.untracked.bool(True)
 )
@@ -83,5 +87,7 @@ premix_stage2.toModify(HGCalAnalysis,
 from Configuration.Eras.Modifier_phase2_hgcalV10_cff import phase2_hgcalV10
 phase2_hgcalV10.toModify(HGCalAnalysis, totallayers_to_monitor = cms.int32(50))
 
-#from Configuration.Eras.Modifier_phase2_hgcalV12_cff import phase2_hgcalV12
-#phase2_hgcalV12.toModify(HGCalAnalysis, totallayers_to_monitor = cms.int32(47))
+from Configuration.Eras.Modifier_phase2_hgcalV16_cff import phase2_hgcalV16
+phase2_hgcalV16.toModify(HGCalAnalysis, totallayers_to_monitor = cms.int32(47))
+
+

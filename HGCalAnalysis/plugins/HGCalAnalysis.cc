@@ -111,6 +111,7 @@ private:
   std::vector<edm::InputTag> label_clustersmask;
   //const bool doSimTrackstersFromCPsPlots_;
 
+  const edm::FileInPath cummatbudinxo_;
   std::vector<std::string> trees_;
   bool createTree_;
 
@@ -139,6 +140,7 @@ private:
   edm::EDGetTokenT<hgcal::RecoToSimCollectionWithSimClusters> associatorMapRtSim;
 
   std::shared_ptr<hgcal::RecHitTools> tools_;
+  std::map<double, double> cummatbudg;
   std::vector<int> particles_to_monitor_;
   unsigned totallayers_to_monitor_;
 
@@ -178,6 +180,7 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
   label_clustersmask(pset.getParameter<std::vector<edm::InputTag>>("LayerClustersInputMask")),
 //  doSimTrackstersPlots_(pset.getUntrackedParameter<bool>("doSimTrackstersPlots")),
 //  doSimTrackstersFromCPsPlots_(pset.getUntrackedParameter<bool>("doSimTrackstersFromCPsPlots")),
+  cummatbudinxo_(pset.getParameter<edm::FileInPath>("cummatbudinxo")),
   trees_(pset.getUntrackedParameter<std::vector<std::string> >("trees")),
   createTree_(pset.getUntrackedParameter<bool>("createTree"))
 {
@@ -243,6 +246,17 @@ HGCalAnalysis::HGCalAnalysis(const edm::ParameterSet& pset) :
 
   particles_to_monitor_ = pset.getParameter<std::vector<int>>("pdgIdCPs");
   totallayers_to_monitor_ = pset.getParameter<int>("totallayers_to_monitor");
+
+  //For the material budget file here
+  std::ifstream fmb(cummatbudinxo_.fullPath().c_str());
+  double thelay = 0.;
+  double mbg = 0.;
+  for (unsigned ilayer = 1; ilayer <= 2 * totallayers_to_monitor_; ++ilayer) {
+    fmb >> thelay >> mbg;
+    cummatbudg.insert(std::pair<double, double>(thelay, mbg));
+  }
+
+  fmb.close();
 
 }
 
@@ -380,9 +394,9 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
     //Now to the SimClusters
     hgcal_validation::initSimClustersInfo(fSimClustersInfo);
     if (doSimClustersFromCPs_){
-      hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClustersFromCPs, *hitMap, tools_, totallayers_to_monitor_);
+      hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClustersFromCPs, *hitMap, tools_, totallayers_to_monitor_, cummatbudg);
     } else{
-      hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClusters, *hitMap, tools_, totallayers_to_monitor_);
+      hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClusters, *hitMap, tools_, totallayers_to_monitor_, cummatbudg);
     }
     fTree["SimClusters"]->Fill();
 
@@ -398,7 +412,7 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
 
     if (doRecHitsTree_){hgcal_validation::initRecHitInfo(fRecHitInfo);}
     hgcal_validation::initLayerClustersInfo(fLayerClustersInfo);
-    hgcal_validation::fillLayerClustersInfo(fLayerClustersInfo, fRecHitInfo, clusters, 9999, 9999, false, UnCalibHitMap, *hitMap, tools_, totallayers_to_monitor_);
+    hgcal_validation::fillLayerClustersInfo(fLayerClustersInfo, fRecHitInfo, clusters, 9999, 9999, false, UnCalibHitMap, *hitMap, tools_, totallayers_to_monitor_, cummatbudg);
     fTree["LayerClusters"]->Fill();
 
   }
@@ -452,25 +466,26 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
       hgcal_validation::initTrackstersInfo(fTrackstersInfo);
 
       // Pattern recognition
-      hgcal_validation::prepare_tracksters_to_SimTracksters(fTrackstersInfo,
-							    tracksters,
-							    clusters,
-							    simTracksters,
-							    1,
-							    simTrackstersFromCPs,
-							    cpToSc_SimTrackstersMap,
-							    simClusters,
-							    caloParticleHandle.id(),
-							    caloParticles,
-							    cPIndices,
-							    selected_cPeff,
-							    *hitMap,
-							    totallayers_to_monitor_);
+      // hgcal_validation::prepare_tracksters_to_SimTracksters(fTrackstersInfo,
+      // 							    tracksters,
+      // 							    clusters,
+      // 							    simTracksters,
+      // 							    1,
+      // 							    simTrackstersFromCPs,
+      // 							    cpToSc_SimTrackstersMap,
+      // 							    simClusters,
+      // 							    caloParticleHandle.id(),
+      // 							    caloParticles,
+      // 							    cPIndices,
+      // 							    selected_cPeff,
+      // 							    *hitMap,
+      // 							    totallayers_to_monitor_);
 
 
-      // hgcal_validation::fillTrackstersInfo(fTrackstersInfo, fSimClustersInfo, fLayerClustersInfo, fRecHitInfo_sc, fRecHitInfo_lc, tracksters, simClusters, clusters, ticlSeedingGlobal, ticlSeedingTrk, UnCalibHitMap, *hitMap, tools_, doEdges_, totallayers_to_monitor_);
+      hgcal_validation::fillTrackstersInfo(fTrackstersInfo, fSimClustersInfo, fLayerClustersInfo, fRecHitInfo_sc, fRecHitInfo_lc, tracksters, simClusters, clusters, ticlSeedingGlobal, ticlSeedingTrk, UnCalibHitMap, *hitMap, tools_, doEdges_, totallayers_to_monitor_, cummatbudg);
 
       fTree[label_tst[wml].label()]->Fill();
+      //fTree["LayerClusters"]->Fill();
 
     }//end of loop over Trackster input labels
   }  
