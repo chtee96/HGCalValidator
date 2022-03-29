@@ -40,7 +40,7 @@ std::string replaceFirstOccurrence(
     return s.replace(pos, toReplace.length(), replaceWith);
 };
 
-void performance(std::string inputFileTemplate = "/eos/cms/store/group/dpg_hgcal/comm_hgcal/apsallid/CalibrationStudies/ResolutionTrees/hgc_singlephoton_eENERGYGeV_nopu.root", std::string region = "CE_E_Front_120um") {
+void performance(std::string inputFileTemplate = "/eos/cms/store/group/dpg_hgcal/comm_hgcal/apsallid/CalibrationStudies/ResolutionTrees_20220327/CE_E_Front_120um/hgc_singlephoton_eENERGYGeV_nopu.root", std::string region = "CE_E_Front_120um") {
   TH1::SetDefaultSumw2(kTRUE);
   setTDRStyle();
   gROOT->SetBatch(false);
@@ -64,6 +64,7 @@ void performance(std::string inputFileTemplate = "/eos/cms/store/group/dpg_hgcal
   energies_.push_back(30.);
   energies_.push_back(300.);
   energies_.push_back(400.);
+  energies_.push_back(500.);
   energies_.push_back(5.);
   energies_.push_back(50.);
   energies_.push_back(8.);
@@ -72,7 +73,7 @@ void performance(std::string inputFileTemplate = "/eos/cms/store/group/dpg_hgcal
   std::vector<TTree*> trees_nopu_;
   for (unsigned int itree = 0; itree<energies_.size(); ++itree) {
     std::string inputFile = replaceFirstOccurrence(inputFileTemplate, "ENERGY", to_string(energies_[itree]));
-    std::cout << "Input file : " << inputFile << std::endl;
+    std::cout << "Input file : " << inputFile + region << std::endl;
     TFile *f_ = TFile::Open(inputFile.c_str());
     TTree *t_ = (TTree*)f_->Get("finaltree");
     trees_nopu_.push_back(t_);
