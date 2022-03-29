@@ -8,8 +8,8 @@ There are many things that are borrowed from the official unmaintained HGCAL too
 [reco-prodtools](https://github.com/CMS-HGCAL/reco-prodtools), [reco-ntuples](https://github.com/CMS-HGCAL/reco-ntuples) and 
 [ntuple-tools](https://github.com/CMS-HGCAL/ntuple-tools). These packages contain many things as a lot of users 
 worked on them in the past. Here we try to limit ourselves to the absolutely necessary material. On the other hand, 
-here we go far beyond as far as objects are concerned, reaching even associators. 
+we go far beyond with respect to objects, reaching even associators. 
 
 Due to the large amount of instructions to run this package, we decided to create the documentation in the 
-wiki pages of this package ([link](https://github.com/apsallid/HGCalValidator/wiki)).
+wiki pages ([link](https://github.com/apsallid/HGCalValidator/wiki)).
 
