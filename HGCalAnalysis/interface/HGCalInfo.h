@@ -217,6 +217,7 @@ namespace hgcal_validation
     std::vector<float> rechit_recostructable_energy;
     std::vector<float> rechit_SoN;
     std::vector<float> rechit_uncalib_energy;
+    std::vector<float> rechit_matbudget;
     std::vector<float> rechit_x;
     std::vector<float> rechit_y;
     std::vector<float> rechit_z;
@@ -246,6 +247,7 @@ namespace hgcal_validation
     rhInfo.rechit_recostructable_energy.clear();
     rhInfo.rechit_SoN.clear();
     rhInfo.rechit_uncalib_energy.clear();
+    rhInfo.rechit_matbudget.clear();
     rhInfo.rechit_x.clear();
     rhInfo.rechit_y.clear();
     rhInfo.rechit_z.clear();
@@ -273,6 +275,7 @@ namespace hgcal_validation
     fTree->Branch("rechit_recostructable_energy", &rhInfo.rechit_recostructable_energy);
     fTree->Branch("rechit_SoN", &rhInfo.rechit_SoN);
     fTree->Branch("rechit_uncalib_energy", &rhInfo.rechit_uncalib_energy);
+    fTree->Branch("rechit_matbudget", &rhInfo.rechit_matbudget);
     fTree->Branch("rechit_x", &rhInfo.rechit_x);
     fTree->Branch("rechit_y", &rhInfo.rechit_y);
     fTree->Branch("rechit_z", &rhInfo.rechit_z);
@@ -368,6 +371,8 @@ namespace hgcal_validation
     std::vector<std::vector<float>> simcluster_rechit_phi;
     std::vector<std::vector<float>> simcluster_rechit_pt;
     std::vector<std::vector<float>> simcluster_rechit_energy;
+    std::vector<std::vector<float>> simcluster_rechit_uncalib_energy;
+    std::vector<std::vector<float>> simcluster_rechit_matbudget;
     std::vector<std::vector<float>> simcluster_rechit_recostructable_energy;
     std::vector<std::vector<float>> simcluster_rechit_SoN;
     std::vector<std::vector<float>> simcluster_rechit_x;
@@ -415,6 +420,8 @@ namespace hgcal_validation
     scInfo.simcluster_rechit_phi.clear();
     scInfo.simcluster_rechit_pt.clear();
     scInfo.simcluster_rechit_energy.clear();
+    scInfo.simcluster_rechit_uncalib_energy.clear();
+    scInfo.simcluster_rechit_matbudget.clear();
     scInfo.simcluster_rechit_recostructable_energy.clear();
     scInfo.simcluster_rechit_SoN.clear();
     scInfo.simcluster_rechit_x.clear();
@@ -462,6 +469,8 @@ namespace hgcal_validation
     fTree->Branch("simcluster_rechit_phi", &scInfo.simcluster_rechit_phi);
     fTree->Branch("simcluster_rechit_pt", &scInfo.simcluster_rechit_pt);
     fTree->Branch("simcluster_rechit_energy", &scInfo.simcluster_rechit_energy);
+    fTree->Branch("simcluster_rechit_uncalib_energy", &scInfo.simcluster_rechit_uncalib_energy);
+    fTree->Branch("simcluster_rechit_matbudget", &scInfo.simcluster_rechit_matbudget);
     fTree->Branch("simcluster_rechit_recostructable_energy", &scInfo.simcluster_rechit_recostructable_energy);
     fTree->Branch("simcluster_rechit_SoN", &scInfo.simcluster_rechit_SoN);
     fTree->Branch("simcluster_rechit_x", &scInfo.simcluster_rechit_x);
@@ -475,6 +484,7 @@ namespace hgcal_validation
   void fillSimClustersInfo(simClustersInfo &scInfo, 
 			   recHitInfo &rhInfo,
 			   std::vector<SimCluster> const& simClusters,
+			   std::unordered_map<DetId, std::vector<const HGCUncalibratedRecHit *> > const& UnCalibHitMap,
 			   std::unordered_map<DetId, const HGCRecHit*> const& hitMap,
 			   std::shared_ptr<hgcal::RecHitTools> recHitTools, 
 			   unsigned int layers,
@@ -577,6 +587,11 @@ namespace hgcal_validation
 	  const double recostructable_energy = hit->energy() * hAndF.second;
 	  const double SoN = hit->signalOverSigmaNoise();
 
+	  // For the uncalibrated energy, which is in MIPs.
+	  std::unordered_map<DetId, std::vector<const HGCUncalibratedRecHit *>>::const_iterator uncalib_check = UnCalibHitMap.find(sh_detid);
+	  const double uncalib_energy = uncalib_check->second.front()->amplitude();
+
+
 	  matched_hits.push_back(sh_detid.rawId());
 	  //std::cout << "1 " << sh_detid.rawId() << std::endl;
 	  /* std::cout << recHitTools->getLayerWithOffset(itcheck->first) + layers * ((recHitTools->zside(itcheck->first) + 1) >> 1) - 1 << std::endl; */
@@ -586,6 +601,8 @@ namespace hgcal_validation
 	  rhInfo.rechit_phi.push_back(recHitTools->getPhi(position));
 	  rhInfo.rechit_pt.push_back(recHitTools->getPt(position,energy));
 	  rhInfo.rechit_energy.push_back(energy);
+	  rhInfo.rechit_uncalib_energy.push_back(uncalib_energy);
+	  rhInfo.rechit_matbudget.push_back(cummatbudg[(double)layerid + 1.]);
 	  rhInfo.rechit_recostructable_energy.push_back(recostructable_energy);
 	  rhInfo.rechit_SoN.push_back(SoN);
 	  rhInfo.rechit_x.push_back(position.x());
@@ -603,6 +620,8 @@ namespace hgcal_validation
 	  rhInfo.rechit_phi.push_back(-9999.);
 	  rhInfo.rechit_pt.push_back(-9999.);
 	  rhInfo.rechit_energy.push_back(-9999.);
+	  rhInfo.rechit_uncalib_energy.push_back(-9999.);
+	  rhInfo.rechit_matbudget.push_back(-9999.);
 	  rhInfo.rechit_recostructable_energy.push_back(-9999.);
 	  rhInfo.rechit_SoN.push_back(-9999.);
 	  rhInfo.rechit_x.push_back(-9999.);
@@ -654,6 +673,8 @@ namespace hgcal_validation
       scInfo.simcluster_rechit_phi.push_back(rhInfo.rechit_phi);
       scInfo.simcluster_rechit_pt.push_back(rhInfo.rechit_pt);
       scInfo.simcluster_rechit_energy.push_back(rhInfo.rechit_energy);
+      scInfo.simcluster_rechit_uncalib_energy.push_back(rhInfo.rechit_uncalib_energy);
+      scInfo.simcluster_rechit_matbudget.push_back(rhInfo.rechit_matbudget);
       scInfo.simcluster_rechit_recostructable_energy.push_back(rhInfo.rechit_recostructable_energy);
       scInfo.simcluster_rechit_SoN.push_back(rhInfo.rechit_SoN);
       scInfo.simcluster_rechit_x.push_back(rhInfo.rechit_x);
@@ -1555,6 +1576,16 @@ namespace hgcal_validation
       //duplicates and then go back to vector for random access, since they say it is faster.
       std::set<int> trackster_layers;
       
+      //This here is problematic. It doesn't relate to tracksters but it works as is since 
+      //in the calibration only one trackster is created. We should keep rhInfo_lc and 
+      //tstId as in fillLayerClustersInfo below e.g. as map tstId -> rhInfo_lc, then 
+      //feed that into fillSimClustersInfo and disregard rechits that aren't not only 
+      //matched to simhits but also don't belong to any trackster tstId. 
+      //So, first I will go to SimCluster object and then if we want to impose apart from 
+      //the simhit-rechit matching the criterion to belong to a LC of a trackster, i will 
+      //come back here and add this and then uncomment below. 
+      //fillSimClustersInfo(scInfo, rhInfo_sc, simClusters, UnCalibHitMap, hitMap, recHitTools, layers, cummatbudg);
+
       //Loop through layer clusters of the trackster
       for (const auto lcId : tracksters[tstId].vertices()) {
   	const std::vector<std::pair<DetId, float>>& hits_and_fractions = clusters[lcId].hitsAndFractions();
@@ -1563,10 +1594,10 @@ namespace hgcal_validation
   	int layerid =
   	  recHitTools->getLayerWithOffset(firstHitDetId) + layers * ((recHitTools->zside(firstHitDetId) + 1) >> 1) - 1;
 
+	fillLayerClustersInfo(lcInfo, rhInfo_lc, clusters, lcId, tstId, true, UnCalibHitMap, hitMap, recHitTools, layers, cummatbudg);
+
   	trackster_layers.insert(layerid);
 
-	fillSimClustersInfo(scInfo, rhInfo_sc, simClusters, hitMap, recHitTools, layers, cummatbudg);
-	fillLayerClustersInfo(lcInfo, rhInfo_lc, clusters, lcId, tstId, true, UnCalibHitMap, hitMap, recHitTools, layers, cummatbudg);
 
       }  // end of loop through layerClusters
 
@@ -1718,7 +1749,6 @@ namespace hgcal_validation
       // -------------------------------------------------------------------------------------
 
     } //end of loop over tracksters
-
 
   }// end of fill tracksters info
 

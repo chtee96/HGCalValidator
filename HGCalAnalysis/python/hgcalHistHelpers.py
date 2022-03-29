@@ -275,12 +275,13 @@ def histsPrintSaveSameCanvas(histsAndProps, outDir, tag="hists1D_", xaxistitle =
 # print/save all histograms
 def histPrintSaveAll(histDict, outDir, tree):
     imgType = "png"
-    outfile = ROOT.TFile("{}/{}".format(outDir, options.output), "recreate")
+    outfile = ROOT.TFile("{}/{}".format(outDir, "test"), "recreate")
     canvas = ROOT.TCanvas(outDir, outDir, 500, 500)
     #canvas.SetLogy()
     if (options.verbosityLevel>=3): print( "histDict.items(): ", histDict.items())
     #Write tree
     tree.SetDirectory(outfile)
+    #outfile.cd()
     tree.Write()
     for key, item in histDict.items():
         # do not save empty histograms
@@ -295,19 +296,19 @@ def histPrintSaveAll(histDict, outDir, tree):
         ROOT.gStyle.SetPadRightMargin(0.02)
         if type(item) == ROOT.TH1F:
             item.Draw("hist0")
-            item.Write()
+            #item.Write()
             canvas.SaveAs("{}/{}.{}".format(outDir, key, imgType))
         if type(item) == ROOT.TH2F:
             item.Draw("colz")
-            item.Write()
+            #item.Write()
             canvas.SaveAs("{}/{}.{}".format(outDir, key, imgType))
         if type(item) == ROOT.TProfile2D:
             item.Draw("")
-            item.Write()
+            #item.Write()
             canvas.SaveAs("{}/{}.{}".format(outDir, key, imgType))
         elif type(item) == ROOT.TH3F:
             item.Draw("box")
-            item.Write()
+            #item.Write()
             canvas.SaveAs("{}/{}.{}".format(outDir, key, imgType))
         else:
             continue
@@ -434,15 +435,15 @@ def drawGraphs(graphsAndProps, grOptions, outDir, latexComment=[], setLogY = Fal
 
 #---------------------------------------------------------------------------------------------------
 # print/save all histograms
-def histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel = 0, setLogY = False, removeOptStat = False, setLogz = True):
+def histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel = 0, setLogY = False, removeOptStat = False, setLogz = True, outfilecounter = 0):
     imgType = "png"
-    outfile = ROOT.TFile("{}/{}".format(outDir, output), "recreate")
+    #outfile = ROOT.TFile("{}/{}.root".format(outDir, output), "recreate")
     canvas = ROOT.TCanvas(outDir, outDir, 500, 500)
     if setLogY: canvas.SetLogy()
     if (verbosityLevel>=3): print( "histDict.items(): ", histDict.items())
     #Write tree
-    tree.SetDirectory(outfile)
-    tree.Write()
+    #tree.SetDirectory(outfile)
+    #tree.Write()
     for key, item in histDict.items():
         # do not save empty histograms
         if (type(item) == ROOT.TH1F) or (type(item) == ROOT.TH2F) or (type(item) == ROOT.TH3F):
@@ -457,7 +458,7 @@ def histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel = 0, setLogY
         #ROOT.gStyle.SetPadRightMargin(0.12)
         if type(item) == ROOT.TH1F:
             item.Draw("hist0")
-            item.Write()
+            #item.Write()
             canvas.SaveAs("{}/{}.{}".format(outDir, key, imgType))
         if type(item) == ROOT.TH2F:
             acustompalette()
@@ -501,11 +502,11 @@ def histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel = 0, setLogY
                 #palette.GetAxis().LabelsOption("v")
                 ROOT.gPad.Update()
             
-            item.Write()
+            #item.Write()
             canvas.SaveAs("{}/{}.{}".format(outDir, key, imgType))
         elif type(item) == ROOT.TH3F:
             item.Draw("box")
-            item.Write()
+            #item.Write()
             canvas.SaveAs("{}/{}.{}".format(outDir, key, imgType))
         else:
             continue
@@ -1252,6 +1253,16 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLev
 
     #histPrintSaveAll(histDict, outDir, output, tree, verbosityLevel)
 
+def maketree(theinarray, addname, tree):
+
+    outbranch = np.empty((1), dtype="float32")
+    tree.Branch(addname, outbranch, "%s/F"%(addname))
+    
+    print(addname)
+    for i in theinarray:
+        print(i)
+        outbranch[0] = i
+        tree.Fill()
 
 #---------------------------------------------------------------------------------------------------
 def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ecut,verbosityLevel = 0):
@@ -1295,21 +1306,26 @@ def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ecu
     EtaBoundariesShower["CE_H_Coarse_Scint"] = [400, 1.5, 3.5]
     EtaBoundariesShower["CE_H_Coarse_300um"] = [200, 1.5, 1.7]
     EtaBoundariesShower["CE_H_Fine_Scint"] = [400, 1.5, 3.5]
-     
+
     # Matched rechits plots
     rHxEnFrSum_m = {}
 
-    recHitEneXFractionOverEgenSumPerThick = df_m.groupby(['EventId','sClusHitsThick','sClusHitsDet']).agg( recHitEneXFractionOverEgenSum  = ('recHitEneXFractionOvertheEgen','sum'))
+    #recHitEneXFractionOverEgenSumPerThick = df_m.groupby(['EventId','sClusHitsThick','sClusHitsDet']).agg( recHitEneXFractionOverEgenSum  = ('recHitEneXFractionOvertheEgen','sum'))
     #The object recHitEneXFractionOverEgenSumPerThick has a multiindex so let's save the quantities we want
     #The conventions are: Tracker = 1, Muon = 2,Ecal = 3,Hcal = 4,Calo = 5,Forward = 6,VeryForward = 7,HGCalEE = 8,HGCalHSi = 9,HGCalHSc = 10,HGCalTrigger = 11 
-    rHxEnFrSum_m["CE_E_Front_120um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
-    rHxEnFrSum_m["CE_E_Front_200um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
-    rHxEnFrSum_m["CE_E_Front_300um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
-    rHxEnFrSum_m["CE_H_Fine_120um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
-    rHxEnFrSum_m["CE_H_Fine_200um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
-    rHxEnFrSum_m["CE_H_Fine_300um"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
-    rHxEnFrSum_m["CE_H_Coarse_Scint"] = recHitEneXFractionOverEgenSumPerThick.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+    rHxEnFrSum_m["CE_E_Front_120um"] = df_m[ (df_m["sClusHitsThick"] == 120) & (df_m["sClusHitsDet"] == 8)].groupby(['EventId']).agg( recHitEneXFractionOverEgenSum  = ('recHitEneXFractionOvertheEgen','sum'))[["recHitEneXFractionOverEgenSum"]].to_numpy().flatten()
 
+    rHxEnFrSum_m["CE_E_Front_200um"] = df_m[ (df_m["sClusHitsThick"] == 200) & (df_m["sClusHitsDet"] == 8)].groupby(['EventId']).agg( recHitEneXFractionOverEgenSum  = ('recHitEneXFractionOvertheEgen','sum'))[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+
+    rHxEnFrSum_m["CE_E_Front_300um"] = df_m[ (df_m["sClusHitsThick"] == 300) & (df_m["sClusHitsDet"] == 8)].groupby(['EventId']).agg( recHitEneXFractionOverEgenSum  = ('recHitEneXFractionOvertheEgen','sum'))[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+
+    rHxEnFrSum_m["CE_H_Fine_120um"]  = df_m[ (df_m["sClusHitsThick"] == 120) & (df_m["sClusHitsDet"] == 9)].groupby(['EventId']).agg( recHitEneXFractionOverEgenSum  = ('recHitEneXFractionOvertheEgen','sum'))[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+
+    rHxEnFrSum_m["CE_H_Fine_200um"]  = df_m[ (df_m["sClusHitsThick"] == 200) & (df_m["sClusHitsDet"] == 9)].groupby(['EventId']).agg( recHitEneXFractionOverEgenSum  = ('recHitEneXFractionOvertheEgen','sum'))[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+
+    rHxEnFrSum_m["CE_H_Fine_300um"]  = df_m[ (df_m["sClusHitsThick"] == 300) & (df_m["sClusHitsDet"] == 9)].groupby(['EventId']).agg( recHitEneXFractionOverEgenSum  = ('recHitEneXFractionOvertheEgen','sum'))[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
+
+    rHxEnFrSum_m["CE_H_Coarse_Scint"] = df_m[ (df_m["sClusHitsThick"] > 400) & (df_m["sClusHitsDet"] == 10)].groupby(['EventId']).agg( recHitEneXFractionOverEgenSum  = ('recHitEneXFractionOvertheEgen','sum'))[['recHitEneXFractionOverEgenSum']].to_numpy().flatten()
     
     #Counting hits of specific thickness
     rHitthick120 = len( df_m[ (df_m['sClusHitsThick'] == 120) ].to_numpy())
@@ -1317,9 +1333,14 @@ def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ecu
     rHitthick300 = len( df_m[ (df_m['sClusHitsThick'] == 300) ].to_numpy())
     rHitthickScint = len( df_m[ (df_m['sClusHitsThick'] > 400) ].to_numpy())
     rHitthickallmatched = df_m.shape[0]
+
+    fittree_m = {}
     
     for i, obj in rHxEnFrSum_m.items():
-        print(i,obj)
+        print(i,obj, "SumEoverEgen_%s"%(i))
+        #print(i,len(obj))
+        fittree_m[i] = ROOT.TTree("ttree_SumEoverEgen_e%s_%s" %(GenEnergy, i), "results")
+        maketree(obj, "SumEoverEgen_%s"%(i), fittree_m[i])
         histDict[i] = {}
         histDict[i] = histValue1D(obj, histDict[i], tag = "SumEoverEgen_%s" %(i), title = "Reconstructed hits energy over generated energy for %s" %(i),   axunit = "#sum E_{i}/E_{gen}",    binsBoundariesX = [400, 0, 2], ayunit = "N(events)", verbosityLevel=verbosityLevel)
         histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
@@ -1363,21 +1384,31 @@ def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ecu
         mycE.Update()
         mycE.SaveAs("%s/P22E%s_thick%s.png"%(outDir,GenEnergy,i))
  
-
+    
     # Unmatched rechits plots
     rHxEnFrSum_u = {}
-    recHitEneSumOvertheEgenPerThick_u = df_u.groupby(['EventId','sClusHitsThick','sClusHitsDet']).agg( recHitEneSumOvertheEgen  = ('recHitEneOvertheEgen','sum'))
 
-    rHxEnFrSum_u["CE_E_Front_120um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 120 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
-    rHxEnFrSum_u["CE_E_Front_200um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 200 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
-    rHxEnFrSum_u["CE_E_Front_300um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 300 & sClusHitsDet == 8")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
-    rHxEnFrSum_u["CE_H_Fine_120um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 120 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
-    rHxEnFrSum_u["CE_H_Fine_200um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 200 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
-    rHxEnFrSum_u["CE_H_Fine_300um"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick == 300 & sClusHitsDet == 9")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
-    rHxEnFrSum_u["CE_H_Coarse_Scint"] = recHitEneSumOvertheEgenPerThick_u.query("sClusHitsThick > 400 & sClusHitsDet == 10")[['recHitEneSumOvertheEgen']].to_numpy().flatten()
+    rHxEnFrSum_u["CE_E_Front_120um"] = df_u[ (df_u["sClusHitsThick"] == 120) & (df_u["sClusHitsDet"] == 8)].groupby(['EventId']).agg( recHitEneOverEgenSum  = ('recHitEneOvertheEgen','sum'))[["recHitEneOverEgenSum"]].to_numpy().flatten()
+
+    rHxEnFrSum_u["CE_E_Front_200um"] = df_u[ (df_u["sClusHitsThick"] == 200) & (df_u["sClusHitsDet"] == 8)].groupby(['EventId']).agg( recHitEneOverEgenSum  = ('recHitEneOvertheEgen','sum'))[['recHitEneOverEgenSum']].to_numpy().flatten()
+
+    rHxEnFrSum_u["CE_E_Front_300um"] = df_u[ (df_u["sClusHitsThick"] == 300) & (df_u["sClusHitsDet"] == 8)].groupby(['EventId']).agg( recHitEneOverEgenSum  = ('recHitEneOvertheEgen','sum'))[['recHitEneOverEgenSum']].to_numpy().flatten()
+
+    rHxEnFrSum_u["CE_H_Fine_120um"]  = df_u[ (df_u["sClusHitsThick"] == 120) & (df_u["sClusHitsDet"] == 9)].groupby(['EventId']).agg( recHitEneOverEgenSum  = ('recHitEneOvertheEgen','sum'))[['recHitEneOverEgenSum']].to_numpy().flatten()
+
+    rHxEnFrSum_u["CE_H_Fine_200um"]  = df_u[ (df_u["sClusHitsThick"] == 200) & (df_u["sClusHitsDet"] == 9)].groupby(['EventId']).agg( recHitEneOverEgenSum  = ('recHitEneOvertheEgen','sum'))[['recHitEneOverEgenSum']].to_numpy().flatten()
+
+    rHxEnFrSum_u["CE_H_Fine_300um"]  = df_u[ (df_u["sClusHitsThick"] == 300) & (df_u["sClusHitsDet"] == 9)].groupby(['EventId']).agg( recHitEneOverEgenSum  = ('recHitEneOvertheEgen','sum'))[['recHitEneOverEgenSum']].to_numpy().flatten()
+
+    rHxEnFrSum_u["CE_H_Coarse_Scint"] = df_u[ (df_u["sClusHitsThick"] > 400) & (df_u["sClusHitsDet"] == 10)].groupby(['EventId']).agg( recHitEneOverEgenSum  = ('recHitEneOvertheEgen','sum'))[['recHitEneOverEgenSum']].to_numpy().flatten()
+
+    fittree_u = {}
 
     for i, obj in rHxEnFrSum_u.items():
         print(i,obj)
+        fittree_u[i] = ROOT.TTree("ttree_SumEoverEgen_Unmatched_e%s_%s" %(GenEnergy, i), "results")
+        maketree(obj, "SumEoverEgen_Unmatched_%s"%(i), fittree_u[i])
+        #maketree(obj, "SumEoverEgen_Unmatched_%s"%(i), tree)
         histDict[i] = {}
         histDict[i] = histValue1D(obj, histDict[i], tag = "SumEoverEgenUnmatched_%s" %(i), title = "Unmatched reconstructed hits energy over generated energy for %s" %(i),   axunit = "#sum E_{i}/E_{gen}",    binsBoundariesX = [400, 0, 2], ayunit = "N(events)", verbosityLevel=verbosityLevel)
         histPrintSaveAll(histDict[i], outDir, output, tree, verbosityLevel)
@@ -1565,8 +1596,192 @@ def recHitCalibrationPlots(df_m,df_u, tree,maxEvents,outDir,output,GenEnergy,ecu
         mycE4.SaveAs("%s/P22E%s_RvsLayer_thick%s_ecut%d.png"%(outDir,GenEnergy,i,ecut))
 
 
+    # Reconstructable energy 
+    recostr_ene = {}
+
+    recostr_ene["CE_E_Front_120um"] = df_m[ (df_m["sClusHitsThick"] == 120) & (df_m["sClusHitsDet"] == 8)].groupby(['EventId']).agg( recHitEneXFractionSum  = ('rechit_recostructable_energy','sum'))[["recHitEneXFractionSum"]].to_numpy().flatten()
+
+    recostr_ene["CE_E_Front_200um"] = df_m[ (df_m["sClusHitsThick"] == 200) & (df_m["sClusHitsDet"] == 8)].groupby(['EventId']).agg( recHitEneXFractionSum  = ('rechit_recostructable_energy','sum'))[['recHitEneXFractionSum']].to_numpy().flatten()
+
+    recostr_ene["CE_E_Front_300um"] = df_m[ (df_m["sClusHitsThick"] == 300) & (df_m["sClusHitsDet"] == 8)].groupby(['EventId']).agg( recHitEneXFractionSum  = ('rechit_recostructable_energy','sum'))[['recHitEneXFractionSum']].to_numpy().flatten()
+
+    recostr_ene["CE_H_Fine_120um"]  = df_m[ (df_m["sClusHitsThick"] == 120) & (df_m["sClusHitsDet"] == 9)].groupby(['EventId']).agg( recHitEneXFractionSum  = ('rechit_recostructable_energy','sum'))[['recHitEneXFractionSum']].to_numpy().flatten()
+
+    recostr_ene["CE_H_Fine_200um"]  = df_m[ (df_m["sClusHitsThick"] == 200) & (df_m["sClusHitsDet"] == 9)].groupby(['EventId']).agg( recHitEneXFractionSum  = ('rechit_recostructable_energy','sum'))[['recHitEneXFractionSum']].to_numpy().flatten()
+
+    recostr_ene["CE_H_Fine_300um"]  = df_m[ (df_m["sClusHitsThick"] == 300) & (df_m["sClusHitsDet"] == 9)].groupby(['EventId']).agg( recHitEneXFractionSum  = ('rechit_recostructable_energy','sum'))[['recHitEneXFractionSum']].to_numpy().flatten()
+
+    recostr_ene["CE_H_Coarse_Scint"] = df_m[ (df_m["sClusHitsThick"] > 400) & (df_m["sClusHitsDet"] == 10)].groupby(['EventId']).agg( recHitEneXFractionSum  = ('rechit_recostructable_energy','sum'))[['recHitEneXFractionSum']].to_numpy().flatten()
+
+    fittree_recostr_ene = {}
+
+    for i, obj in recostr_ene.items():
+        print(i,obj)
+        fittree_recostr_ene[i] = ROOT.TTree("ttree_reconstructable_energy_e%s_%s" %(GenEnergy, i), "results")
+        maketree(obj, "reconstructable_energy_%s"%(i), fittree_recostr_ene[i])
+        #maketree(obj, "reconstructable_energy_%s"%(i), tree)
+
+    # Uncalibrated energy 
+    uncalib_ene = {}
+
+    uncalib_ene["CE_E_Front_120um"] = df_m[ (df_m["sClusHitsThick"] == 120) & (df_m["sClusHitsDet"] == 8)].groupby(['EventId']).agg( uncalibRecHitEneSum  = ('rechit_uncalib_energy','sum'))[["uncalibRecHitEneSum"]].to_numpy().flatten()
+
+    uncalib_ene["CE_E_Front_200um"] = df_m[ (df_m["sClusHitsThick"] == 200) & (df_m["sClusHitsDet"] == 8)].groupby(['EventId']).agg( uncalibRecHitEneSum  = ('rechit_uncalib_energy','sum'))[['uncalibRecHitEneSum']].to_numpy().flatten()
+
+    uncalib_ene["CE_E_Front_300um"] = df_m[ (df_m["sClusHitsThick"] == 300) & (df_m["sClusHitsDet"] == 8)].groupby(['EventId']).agg( uncalibRecHitEneSum  = ('rechit_uncalib_energy','sum'))[['uncalibRecHitEneSum']].to_numpy().flatten()
+
+    uncalib_ene["CE_H_Fine_120um"]  = df_m[ (df_m["sClusHitsThick"] == 120) & (df_m["sClusHitsDet"] == 9)].groupby(['EventId']).agg( uncalibRecHitEneSum  = ('rechit_uncalib_energy','sum'))[['uncalibRecHitEneSum']].to_numpy().flatten()
+
+    uncalib_ene["CE_H_Fine_200um"]  = df_m[ (df_m["sClusHitsThick"] == 200) & (df_m["sClusHitsDet"] == 9)].groupby(['EventId']).agg( uncalibRecHitEneSum  = ('rechit_uncalib_energy','sum'))[['uncalibRecHitEneSum']].to_numpy().flatten()
+
+    uncalib_ene["CE_H_Fine_300um"]  = df_m[ (df_m["sClusHitsThick"] == 300) & (df_m["sClusHitsDet"] == 9)].groupby(['EventId']).agg( uncalibRecHitEneSum  = ('rechit_uncalib_energy','sum'))[['uncalibRecHitEneSum']].to_numpy().flatten()
+
+    uncalib_ene["CE_H_Coarse_Scint"] = df_m[ (df_m["sClusHitsThick"] > 400) & (df_m["sClusHitsDet"] == 10)].groupby(['EventId']).agg( uncalibRecHitEneSum  = ('rechit_uncalib_energy','sum'))[['uncalibRecHitEneSum']].to_numpy().flatten()
+
+    fittree_uncalib_ene = {}
+
+    for i, obj in uncalib_ene.items():
+        print(i,obj)
+        fittree_uncalib_ene[i] = ROOT.TTree("ttree_uncalib_energy_e%s_%s" %(GenEnergy, i), "results")
+        maketree(obj, "uncalib_energy_%s"%(i), fittree_uncalib_ene[i])
+        #maketree(obj, "uncalib_energy_%s"%(i), tree)
+
+    #Time to save the trees. 
+    outfile = ROOT.TFile("{}/{}.root".format(outDir, output), "recreate")
+
+    #The final tree as we want it
+    #finaltree = ROOT.TTree("ttree_e%s" %(GenEnergy), "A tree with the needed info for resolution plots")
+
+    #finaldf = {}
+    dataout = {}
+    maxlen = max(len(recostr_ene["CE_E_Front_120um"]),len(recostr_ene["CE_E_Front_200um"]),len(recostr_ene["CE_E_Front_300um"]),len(recostr_ene["CE_H_Fine_120um"]),len(recostr_ene["CE_H_Fine_200um"]),len(recostr_ene["CE_H_Fine_300um"]) ,len(recostr_ene["CE_H_Coarse_Scint"]))
+    for region in ["CE_E_Front_120um","CE_E_Front_200um","CE_E_Front_300um","CE_H_Fine_120um","CE_H_Fine_200um","CE_H_Fine_300um","CE_H_Coarse_Scint"]:
+        padtocreatedf = maxlen - len(recostr_ene[region])
+        dummy = np.empty(padtocreatedf)
+        dummy.fill(99999999)
+        if padtocreatedf != 0: 
+            dataout['reconstructable_energy_%s' %(region)] = np.append(recostr_ene[region], dummy )      
+        else: 
+            dataout['reconstructable_energy_%s' %(region)] = recostr_ene[region]
+
+    maxlen = max(len(uncalib_ene["CE_E_Front_120um"]),len(uncalib_ene["CE_E_Front_200um"]),len(uncalib_ene["CE_E_Front_300um"]),len(uncalib_ene["CE_H_Fine_120um"]),len(uncalib_ene["CE_H_Fine_200um"]),len(uncalib_ene["CE_H_Fine_300um"]) ,len(uncalib_ene["CE_H_Coarse_Scint"]))
+    for region in ["CE_E_Front_120um","CE_E_Front_200um","CE_E_Front_300um","CE_H_Fine_120um","CE_H_Fine_200um","CE_H_Fine_300um","CE_H_Coarse_Scint"]:
+        padtocreatedf = maxlen - len(uncalib_ene[region])
+        dummy = np.empty(padtocreatedf)
+        dummy.fill(99999999)
+        if padtocreatedf != 0: 
+            dataout['uncalib_energy_%s' %(region)] = np.append(uncalib_ene[region], dummy )      
+        else: 
+            dataout['uncalib_energy_%s' %(region)] = uncalib_ene[region]
+
+    maxlen = max(len(rHxEnFrSum_m["CE_E_Front_120um"]),len(rHxEnFrSum_m["CE_E_Front_200um"]),len(rHxEnFrSum_m["CE_E_Front_300um"]),len(rHxEnFrSum_m["CE_H_Fine_120um"]),len(rHxEnFrSum_m["CE_H_Fine_200um"]),len(rHxEnFrSum_m["CE_H_Fine_300um"]) ,len(rHxEnFrSum_m["CE_H_Coarse_Scint"]))
+    for region in ["CE_E_Front_120um","CE_E_Front_200um","CE_E_Front_300um","CE_H_Fine_120um","CE_H_Fine_200um","CE_H_Fine_300um","CE_H_Coarse_Scint"]:
+        padtocreatedf = maxlen - len(rHxEnFrSum_m[region])
+        dummy = np.empty(padtocreatedf)
+        dummy.fill(99999999)
+        if padtocreatedf != 0: 
+            dataout['SumEoverEgen_%s' %(region)] = np.append(rHxEnFrSum_m[region], dummy )      
+        else: 
+            dataout['SumEoverEgen_%s' %(region)] = rHxEnFrSum_m[region]
+
+
+    #maxlen = max(len(rHxEnFrSum_u["CE_E_Front_120um"]),len(rHxEnFrSum_u["CE_E_Front_200um"]),len(rHxEnFrSum_u["CE_E_Front_300um"]),len(rHxEnFrSum_u["CE_H_Fine_120um"]),len(rHxEnFrSum_u["CE_H_Fine_200um"]),len(rHxEnFrSum_u["CE_H_Fine_300um"]) ,len(rHxEnFrSum_u["CE_H_Coarse_Scint"]))
+    #for region in ["CE_E_Front_120um","CE_E_Front_200um","CE_E_Front_300um","CE_H_Fine_120um","CE_H_Fine_200um","CE_H_Fine_300um","CE_H_Coarse_Scint"]:
+    #    padtocreatedf = maxlen - len(rHxEnFrSum_u[region])
+    #    dummy = np.empty(padtocreatedf)
+    #    dummy.fill(99999999)
+    #    if padtocreatedf != 0: 
+    #        dataout['SumEoverEgen_Unmatched_%s' %(region)] = np.append(rHxEnFrSum_u[region], dummy )      
+    #    else: 
+    #        dataout['SumEoverEgen_Unmatched_%s' %(region)] = rHxEnFrSum_u[region]
+
+
+
+
+    finaldf = ROOT.RDF.MakeNumpyDataFrame(dataout)
+    #finaldf.Display().Print()
+    #for region in ["CE_E_Front_120um","CE_E_Front_200um","CE_E_Front_300um","CE_H_Fine_120um","CE_H_Fine_200um","CE_H_Fine_300um","CE_H_Coarse_Scint"]:
+        #finaldf[region] = ROOT.RDataFrame(fittree_m[region])
+        #print(finaldf[region])
+    
+
+    #for region in ["CE_E_Front_120um","CE_E_Front_200um","CE_E_Front_300um","CE_H_Fine_120um","CE_H_Fine_200um","CE_H_Fine_300um","CE_H_Coarse_Scint"]:
         
+    #    for i in fittree[region].GetEntries(): 
+    #        print(region, i)
         
+        #finaltree = fittree[region].CloneTree(0)
+        #fittree[region].GetListoOfClones().Remove(finaltree)
+        #finaltree.ResetBranchAddress()
+        #finaltree->SetBranchAddress("SumEoverEgen_%s"%(region), "SumEoverEgen_%s"%(region))
+        
+        #finaltree.GetBranch("SumEoverEgen_%s"%(region))
+        #finaltree.CopyEntries(fittree[region])
+        
+        #fittree[region].GetBranch("SumEoverEgen_%s"%(region))
+        
+
+        #finaltree.Branch("SumEoverEgen_%s"%(region), rHxEnFrSum_tree_m[region], "SumEoverEgen_%s/F"%(region))
+
+        #ttree_SumEoverEgen_CE_E_Front_120um_e100->GetBranch("SumEoverEgen_CE_E_Front_120um")
+
+    #Write tree
+    #tree.SetDirectory(outfile)
+    #tree.Write()
+    #for i, obj in fittree_u.items(): fittree_u[i].Write()
+    #for i, obj in fittree_m.items(): fittree_m[i].Write()
+    #for i, obj in fittree_recostr_ene.items(): fittree_recostr_ene[i].Write()
+    #for i, obj in fittree_uncalib_ene.items(): fittree_uncalib_ene[i].Write()
+    #finaltree.Write()
+    finaldf.Snapshot('finaltree', "{}/{}.root".format(outDir, output))
+
+'''
+    maketree(rHxEnFrSum_m, rHxEnFrSum_u, recostr_ene, uncalib_ene)
+
+    rHxEnFrSum_tree_m = {}
+    rHxEnFrSum_tree_u = {}
+    recostr_tree_ene = {}
+    uncalib_tree_ene = {}
+
+    for region in ["CE_E_Front_120um","CE_E_Front_200um","CE_E_Front_300um","CE_H_Fine_120um","CE_H_Fine_200um","CE_H_Fine_300um","CE_H_Coarse_Scint"]: 
+        rHxEnFrSum_tree_m[region] = np.empty((1), dtype="float32")
+        rHxEnFrSum_tree_u[region] = np.empty((1), dtype="float32")
+        recostr_tree_ene[region] = np.empty((1), dtype="float32")
+        uncalib_tree_ene[region] = np.empty((1), dtype="float32")
+
+    for region in ["CE_E_Front_120um","CE_E_Front_200um","CE_E_Front_300um","CE_H_Fine_120um","CE_H_Fine_200um","CE_H_Fine_300um","CE_H_Coarse_Scint"]: 
+        tree.Branch("SumEoverEgen_%s"%(region), rHxEnFrSum_tree_m[region], "SumEoverEgen_%s/F"%(region))
+        tree.Branch("SumEoverEgen_Unmatched_%s"%(region), rHxEnFrSum_tree_u[region], "SumEoverEgen_Unmatched_%s/F"%(region))
+        tree.Branch("reconstructable_energy_%s"%(region), recostr_tree_ene[region], "reconstructable_energy_%s/F"%(region))
+        tree.Branch("uncalib_energy_%s"%(region), uncalib_tree_ene[region], "uncalib_energy_%s/F"%(region))
+
+    for i in rHxEnFrSum_tree_m
+
+
+def maketree(rHxEnFrSum_m, rHxEnFrSum_u, recostr_ene, uncalib_ene):
+
+    rHxEnFrSum_tree_m_CE_E_120um = np.empty((1), dtype="float32")
+    rHxEnFrSum_tree_m_CE_E_200um = np.empty((1), dtype="float32")
+    rHxEnFrSum_tree_m_CE_E_300um = np.empty((1), dtype="float32")
+    rHxEnFrSum_tree_m_CE_H_120um = np.empty((1), dtype="float32")
+    rHxEnFrSum_tree_m_CE_H_200um = np.empty((1), dtype="float32")
+    rHxEnFrSum_tree_m_CE_H_300um = np.empty((1), dtype="float32")
+    rHxEnFrSum_tree_m_CE_H_Scint = np.empty((1), dtype="float32")
+
+    tree.Branch("SumEoverEgen_CE_E_120um", rHxEnFrSum_tree_m_CE_E_120um, "SumEoverEgen_CE_E_120um/F")
+    tree.Branch("SumEoverEgen_CE_E_200um", rHxEnFrSum_tree_m_CE_E_200um, "SumEoverEgen_CE_E_200um/F")
+    tree.Branch("SumEoverEgen_CE_E_300um", rHxEnFrSum_tree_m_CE_E_300um, "SumEoverEgen_CE_E_300um/F")
+    tree.Branch("SumEoverEgen_CE_H_120um", rHxEnFrSum_tree_m_CE_H_120um, "SumEoverEgen_CE_H_120um/F")
+    tree.Branch("SumEoverEgen_CE_H_200um", rHxEnFrSum_tree_m_CE_H_200um, "SumEoverEgen_CE_H_200um/F")
+    tree.Branch("SumEoverEgen_CE_H_300um", rHxEnFrSum_tree_m_CE_H_300um, "SumEoverEgen_CE_H_300um/F")
+    tree.Branch("SumEoverEgen_CE_H_Scint", rHxEnFrSum_tree_m_CE_H_Scint, "SumEoverEgen_CE_H_Scint/F")
+
+    for i in rHxEnFrSum_m["CE_E_Front_120um"]: 
+       
+        outbranch[0] = i
+        tree.Fill()
+'''
+    
 #---------------------------------------------------------------------------------------------------
 def drawEdges3d_plt(df,EventId):
     

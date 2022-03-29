@@ -21,7 +21,7 @@ def analyzeSimClusters(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
         currentevent = event.entry()
         if event.entry() >= maxEvents and maxEvents != -1 : break
         #if currentevent % 100 != 0 : continue
-        if (verbosityLevel>=1 and currentevent % 1 == 0): print( "\nCurrent event: ", currentevent)
+        if (verbosityLevel>=1 and currentevent % 100 == 0): print( "\nCurrent event: ", currentevent)
 
         simClusters = event.simClusters()
         
@@ -59,8 +59,12 @@ def analyzeSimClusters(ntuple,tree,maxEvents,outDir,output,verbosityLevel):
                 out["rechit_pt"].append(rh)
             for rh in simClus.rechit_energy():
                 out["rechit_energy"].append(rh)
+            for rh in simClus.rechit_uncalib_energy():
+                out["rechit_uncalib_energy"].append(rh)
             for rh in simClus.rechit_recostructable_energy():
                 out["rechit_recostructable_energy"].append(rh)
+            for rh in simClus.rechit_matbudget():  
+                out["rechit_matbudget"].append(rh)
             for rh in simClus.rechit_SoN():
                 out["rechit_SoN"].append(rh)
             for rh in simClus.rechit_x():
@@ -158,6 +162,7 @@ def analyzeLayerClusters(ntuple,tree,maxEvents,outDir,output,GenEnergy,verbosity
             outLC["layer"].append(layClus.layer())
             outLC["nhitCore"].append(layClus.nhitCore())
             outLC["nhitAll"].append(layClus.nhitAll())
+            outLC["matbudget"].append(layClus.matbudget())
             outLC["rechitSeed"].append(layClus.rechitSeed())
             for DetId in layClus.rechit_detid():
                 out["lClusHits"].append(DetId)
@@ -206,8 +211,8 @@ def analyzeLayerClusters(ntuple,tree,maxEvents,outDir,output,GenEnergy,verbosity
                 out["rechit_cell_u"].append(rh)
             for rh in layClus.rechit_cell_v():
                 out["rechit_cell_v"].append(rh)
-            for rh in layClus.rechit_isHalf():
-                out["rechit_isHalf"].append(rh)
+            #for rh in layClus.rechit_isHalf():
+            #    out["rechit_isHalf"].append(rh)
             for rh in layClus.rechit_flags():
                 out["rechit_flags"].append(rh)
             for rh in layClus.rechit_flags():
@@ -219,13 +224,20 @@ def analyzeLayerClusters(ntuple,tree,maxEvents,outDir,output,GenEnergy,verbosity
     #for key, value in out.items(): print(key, len(value))
     #Finished loop over events. Create the per hit dataframe
     df = pd.DataFrame(dict([ (k,pd.Series(v)) for k,v in out.items() ]))
-    df.fillna(-99999,inplace=True)
+    #df.fillna(-99999,inplace=True)
     #print(df.head())
+
+    #data = { k: np.array(v) for k,v in out.items() }
+    #ROOT.ROOT.EnableImplicitMT()
+    #df = ROOT.RDF.MakeNumpyDataFrame(data)
 
     #And now the per layer dataframe
     dfl = pd.DataFrame(dict([ (k,pd.Series(v)) for k,v in outLC.items() ]))
-    dfl.fillna(-99999,inplace=True)
+    #dfl.fillna(-99999,inplace=True)
     #print(dfl.head())
+    
+    #data = { k: np.array(v) for k,v in outLC.items() }
+    #dfl = ROOT.RDF.MakeNumpyDataFrame(data)
 
     #Make all the plots needed using the above dataframes
     layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLevel)
@@ -234,7 +246,7 @@ def analyzeLayerClusters(ntuple,tree,maxEvents,outDir,output,GenEnergy,verbosity
 
 def recHitCalibration(df,tree,maxEvents,outDir,output,GenEnergy,ecut,verbosityLevel): 
 
-    df_m = df.Filter("rechit_simclusterid >= 0 && rechit_SoN >= 3", "RecHit matched with simHit from simcluster ")
+    df_m = df.Filter("rechit_simclusterid >= 0 && rechit_SoN >= %s" %(ecut), "RecHit matched with simHit from simcluster ")
     df_u = df.Filter("rechit_simclusterid < 0", "Unmatched recHit ")
     #Add a column with the rechit_energy x fraction
     df_m = df_m.Define('recHitEneXFraction', 'rechit_energy * sClusHitsFractions')
@@ -256,6 +268,7 @@ def recHitCalibration(df,tree,maxEvents,outDir,output,GenEnergy,ecut,verbosityLe
     the_df_m = pd.DataFrame(npy_m)
     the_df_u = pd.DataFrame(npy_u)
     print(the_df_m.head())
+    #the_df_m.to_csv("{}/{}.csv".format(outDir, output), index=False)
 
     #Make the plots
     recHitCalibrationPlots(the_df_m,the_df_u,tree,maxEvents,outDir,output,GenEnergy,ecut,verbosityLevel)

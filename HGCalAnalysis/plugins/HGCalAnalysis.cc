@@ -394,9 +394,9 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
     //Now to the SimClusters
     hgcal_validation::initSimClustersInfo(fSimClustersInfo);
     if (doSimClustersFromCPs_){
-      hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClustersFromCPs, *hitMap, tools_, totallayers_to_monitor_, cummatbudg);
+      hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClustersFromCPs, UnCalibHitMap, *hitMap, tools_, totallayers_to_monitor_, cummatbudg);
     } else{
-      hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClusters, *hitMap, tools_, totallayers_to_monitor_, cummatbudg);
+      hgcal_validation::fillSimClustersInfo(fSimClustersInfo, fRecHitInfo, simClusters, UnCalibHitMap, *hitMap, tools_, totallayers_to_monitor_, cummatbudg);
     }
     fTree["SimClusters"]->Fill();
 
@@ -486,6 +486,7 @@ void HGCalAnalysis::analyze(const edm::Event &event, const edm::EventSetup &setu
 
       fTree[label_tst[wml].label()]->Fill();
       //fTree["LayerClusters"]->Fill();
+      // fTree["SimClusters"]->Fill();
 
     }//end of loop over Trackster input labels
   }  

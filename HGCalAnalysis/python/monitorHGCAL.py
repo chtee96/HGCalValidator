@@ -48,7 +48,7 @@ def main():
 
     #The tree below where we will save all our results apart from 
     #the individual pngs we may need to also plot. 
-    tree = ROOT.TTree("tree%s" %(options.object), "results")
+    tree = ROOT.TTree("ttree_%s_e%s" %(options.object, options.genEnergy), "results")
     
     #Check to see whether the output file is there to avoid overwriting. It 
     #assumes that you are reading from eos, since these are huge files
