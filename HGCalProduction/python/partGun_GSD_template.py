@@ -57,9 +57,11 @@ elif gunmode == 'closeby':
     process.generator = cms.EDProducer("GUNPRODUCERTYPE",
         AddAntiParticle = cms.bool(False),
         PGunParameters = cms.PSet(
+            ControlledByEta = cms.bool(False),
             PartID = cms.vint32(DUMMYIDs),
             EnMin = cms.double(DUMMYTHRESHMIN),
             EnMax = cms.double(DUMMYTHRESHMAX),
+            MaxEnSpread = cms.bool(False),
             RMin = cms.double(DUMMYRMIN),
             RMax = cms.double(DUMMYRMAX),
             ZMin = cms.double(DUMMYZMIN),

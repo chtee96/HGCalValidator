@@ -2,12 +2,12 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: CE_E_Front_200um_cfi --conditions auto:phase2_realistic_T21 -n 10 --era Phase2C11I13M9 --eventcontent FEVTDEBUGHLT -s GEN,SIM,DIGI:pdigi_valid,L1,L1TrackTrigger,DIGI2RAW,HLT:@fake2 --datatier GEN-SIM --beamspot NoSmear --geometry Extended2026D86 --no_exec --python_filename=GSD_fragment.py
+# with command line options: CE_E_Front_200um_cfi --conditions auto:phase2_realistic_T21 -n 10 --era Phase2C17I13M9 --eventcontent FEVTDEBUGHLT -s GEN,SIM,DIGI:pdigi_valid,L1,L1TrackTrigger,DIGI2RAW,HLT:@fake2 --datatier GEN-SIM --beamspot NoSmear --geometry Extended2026D88 --no_exec --python_filename=GSD_fragment.py
 import FWCore.ParameterSet.Config as cms
 
-from Configuration.Eras.Era_Phase2C11I13M9_cff import Phase2C11I13M9
+from Configuration.Eras.Era_Phase2C17I13M9_cff import Phase2C17I13M9
 
-process = cms.Process('HLT',Phase2C11I13M9)
+process = cms.Process('HLT',Phase2C17I13M9)
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -15,8 +15,8 @@ process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('SimGeneral.MixingModule.mixNoPU_cfi')
-process.load('Configuration.Geometry.GeometryExtended2026D86Reco_cff')
-process.load('Configuration.Geometry.GeometryExtended2026D86_cff')
+process.load('Configuration.Geometry.GeometryExtended2026D88Reco_cff')
+process.load('Configuration.Geometry.GeometryExtended2026D88_cff')
 process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('Configuration.StandardSequences.VtxSmearedNoSmear_cff')
@@ -43,6 +43,7 @@ process.options = cms.untracked.PSet(
     IgnoreCompletely = cms.untracked.vstring(),
     Rethrow = cms.untracked.vstring(),
     SkipEvent = cms.untracked.vstring(),
+    accelerators = cms.untracked.vstring('*'),
     allowUnscheduled = cms.obsolete.untracked.bool,
     canDeleteEarly = cms.untracked.vstring(),
     deleteNonConsumedUnscheduledModules = cms.untracked.bool(True),
@@ -100,9 +101,11 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T21', ''
 process.generator = cms.EDProducer("CloseByParticleGunProducer",
     AddAntiParticle = cms.bool(False),
     PGunParameters = cms.PSet(
+        ControlledByEta = cms.bool(False),
         Delta = cms.double(10),
         EnMax = cms.double(200.0),
         EnMin = cms.double(25.0),
+        MaxEnSpread = cms.bool(False),
         MaxEta = cms.double(2.7),
         MaxPhi = cms.double(3.14159265359),
         MinEta = cms.double(1.7),
