@@ -6,7 +6,7 @@ module in CMSSW, however the architecture is different because here we want to p
 
 There are many things that are borrowed from the official unmaintained HGCAL tools, namely
 [reco-prodtools](https://github.com/CMS-HGCAL/reco-prodtools), [reco-ntuples](https://github.com/CMS-HGCAL/reco-ntuples) and 
-[ntuple-tools](https://github.com/CMS-HGCAL/ntuple-tools). These packages contain many things as many users 
+[ntuple-tools](https://github.com/CMS-HGCAL/ntuple-tools). These packages contain many things as a lot of users 
 worked on them in the past. Here we try to limit ourselves to the absolutely necessary material. On the other hand, 
 here we go far beyond as far as objects are concerned, reaching even associators. 
 
