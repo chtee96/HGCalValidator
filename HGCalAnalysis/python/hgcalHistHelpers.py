@@ -898,7 +898,7 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLev
     histPrintSaveAll(histDict_ShowerEneRes, outDir, output, tree, verbosityLevel)
 
 
-    histValues2D
+    
     #-------------------------------------------------------------------------
     #LC size
     histDict_LCsize = {}
