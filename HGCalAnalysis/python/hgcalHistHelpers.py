@@ -850,7 +850,7 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLev
     histDict_LCeneOverLCsize = histValue1D(LCeneOverLCsize, histDict_LCeneOverLCsize, tag = "LCeneOverLCsize", title = "LC energy over LC size",   axunit = "Average Cell Energy (GeV)", binsBoundariesX = [200, 0, 2], ayunit = "#Events/0.01 GeV", verbosityLevel=verbosityLevel)
     #Plus a zoomed version
     histDict_LCeneOverLCsize = histValue1D(LCeneOverLCsize, histDict_LCeneOverLCsize, tag = "LCeneOverLCsize_Zoomed", title = "LC energy over LC size",   axunit = "Average Cell Energy (GeV)", binsBoundariesX = [20, 0, 0.2], ayunit = "#Events/0.01 GeV", verbosityLevel=verbosityLevel)
-    histPrintSaveAll(histDict_LCeneOverLCsize, outDir, output, tree, verbosityLevel, setLogY = True)
+    histPrintSaveAll(histDict_LCeneOverLCsize, outDir, output, tree, verbosityLevel)
 
     #-------------------------------------------------------------------------
     #shower depth for each layers
@@ -871,13 +871,34 @@ def layerClusterPlots(df,dfl,tree,maxEvents,outDir,output,GenEnergy,verbosityLev
     shower_depth = np.array(shower_depth)
     shower_depthNormalised = shower_depth/shower_depth.mean()
     
-    histDict_LCshowerDepth = histValue1D(shower_depth, histDict_LCshowerDepth, tag = "LCshowerDepth", title = "Shower depth by event",   axunit = "Shower Depth", binsBoundariesX = [50, 0, 50], ayunit = "a.u.", verbosityLevel=verbosityLevel)
+    histDict_LCshowerDepth = histValue1D(shower_depth, histDict_LCshowerDepth, tag = "LCshowerDepth", title = "Shower depth by event",   axunit = "Shower Depth (X0)", binsBoundariesX = [100, 0, 25], ayunit = "a.u.", verbosityLevel=verbosityLevel)
     histPrintSaveAll(histDict_LCshowerDepth, outDir, output, tree, verbosityLevel, setLogY = True)
 
-    histDict_LCshowerDepth_Normalised = histValue1D(shower_depthNormalised, histDict_LCshowerDepth_Normalised, tag = "LCshowerDepthNormalised", title = "Normalised shower depth by event",   axunit = "Shower depth (Normalised)", binsBoundariesX = [10, 0, 20], ayunit = "#a.u.", verbosityLevel=verbosityLevel)
+    histDict_LCshowerDepth_Normalised = histValue1D(shower_depthNormalised, histDict_LCshowerDepth_Normalised, tag = "LCshowerDepthNormalised", title = "Normalised shower depth by event",   axunit = "Shower depth (Normalised)", binsBoundariesX = [40, -1, 3], ayunit = "#a.u.", verbosityLevel=verbosityLevel)
     histPrintSaveAll(histDict_LCshowerDepth_Normalised, outDir, output, tree, verbosityLevel, setLogY = True)
     
-    # I added this line to test git
+    #-------------------------------------------------------------------------
+    #energy resolution and shower depth
+    ene_res = ( (theEgen - sumLCene[['LCEneSum']].to_numpy().flatten() )/ theEgen )*100
+    histDict_EneRes = {}
+    histDict_EneRes = histValue1D(ene_res, histDict_EneRes, tag = "Energy_Resolution", title = "Energy Resolution for 100 GeV events", axunit = "Energy Resolution (%)" , binsBoundariesX= [60, -15, 15], ayunit ="a.u.", verbosityLevel=verbosityLevel)
+    histPrintSaveAll(histDict_EneRes, outDir, output, tree, verbosityLevel, setLogY = True)
+    eneRes_shower = []
+    for i in range(len(theEgen)):
+        tmp = []
+        tmp.append(shower_depth[i])
+        tmp.append(ene_res[i])
+        
+        eneRes_shower.append(tmp)
+
+    eneRes_shower = np.array(eneRes_shower)
+
+    histDict_ShowerEneRes = {}
+    histDict_ShowerEneRes = histValues2D(eneRes_shower, histDict_ShowerEneRes, tag = "EnergyRes_ShowerDepth", title =" Energy Resolution vs Shower Depth", axunit = "Shower Depth (X0)", binsBoundariesX = [50, 0, 25] , ayunit = "Energy Resolution (%)" , binsBoundariesY = [60,-15,15], verbosityLevel = verbosityLevel)
+    histPrintSaveAll(histDict_ShowerEneRes, outDir, output, tree, verbosityLevel)
+
+
+    histValues2D
     #-------------------------------------------------------------------------
     #LC size
     histDict_LCsize = {}
